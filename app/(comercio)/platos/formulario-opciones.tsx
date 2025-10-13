@@ -68,6 +68,8 @@ export default function FormularioOpciones() {
 
         const tipoId = tipoRes.data.id;
 
+        console.log(tipoId)
+
         // 2️⃣ Crear las opciones dentro de ese tipo
         for (const opcion of tipo.opciones) {
           await axios.post(

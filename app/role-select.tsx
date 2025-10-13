@@ -57,6 +57,7 @@ export default function RoleSelectScreen() {
       <View className="flex-1 items-center px-5 pt-10">
         <Text className="text-3xl font-extrabold mb-8 text-secondary">¡Cuéntanos de ti!</Text>
 
+        <Text>{API_URL}</Text>
         {roles.map((role) => (
           <TouchableOpacity
             key={role.id}
