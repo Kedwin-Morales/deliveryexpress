@@ -109,7 +109,7 @@ const Cart = () => {
                 longitude: direccionPrincipal.longitud,
             };
 
-            const url = `http://161.97.137.192:5000/route/v1/driving/${origen.longitude},${origen.latitude};${destino.longitude},${destino.latitude}?overview=full&geometries=geojson`;
+            const url = `https://maps.deliveryexpressfast.store/route/v1/driving/${origen.longitude},${origen.latitude};${destino.longitude},${destino.latitude}?overview=full&geometries=geojson`;
 
             const res = await axios.get(url);
             const distanciaMetros = res.data.routes[0].distance;
@@ -132,7 +132,6 @@ const Cart = () => {
             console.log(`Distancia: ${distanciaKm.toFixed(2)} km`);
             console.log(`Costo envío: ${costo.toFixed(2)} USD`);
         } catch (err) {
-            console.log("Error calculando costo de envío:", err);
             showPopup("No se pudo calcular el costo de envío", "cancel");
         }
     };
