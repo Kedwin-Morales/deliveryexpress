@@ -1,13 +1,11 @@
 import { useState } from "react";
 import { View, Text, TouchableOpacity } from "react-native";
-import MapView, { Marker, MapPressEvent } from "react-native-maps";
+import MapView, { Marker, MapPressEvent, UrlTile, MarkerDragStartEndEvent } from "react-native-maps";
 import { useRouter } from "expo-router";
 
 export default function SeleccionarDireccion() {
   const router = useRouter();
   const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-
-  console.log('first')
 
   // Región inicial → Guarenas
   const defaultRegion = {
@@ -17,11 +15,19 @@ export default function SeleccionarDireccion() {
     longitudeDelta: 0.05,
   };
 
-  // Cuando el usuario toca el mapa, guardamos el punto
+  // Cuando el usuario toca el mapa, colocamos el marcador
   const handlePress = (event: MapPressEvent) => {
-    const { latitude, longitude } = event.nativeEvent.coordinate;
-    setLocation({ latitude, longitude });
+    const coord = event.nativeEvent?.coordinate;
+    if (coord?.latitude && coord?.longitude) {
+      setLocation({ latitude: coord.latitude, longitude: coord.longitude });
+    }
   };
+
+  // Cuando el usuario arrastra el marcador
+  const handleDragEnd = (event: MarkerDragStartEndEvent) => {
+  const coord = event.nativeEvent.coordinate;
+  setLocation({ latitude: coord.latitude, longitude: coord.longitude });
+};
 
   const handleConfirm = () => {
     if (location) {
@@ -35,32 +41,44 @@ export default function SeleccionarDireccion() {
   };
 
   const handleCancel = () => {
-    router.push('/restaurantes/registrar-restaurantes'); // 
+    router.push("/restaurantes/registrar-restaurantes");
   };
 
   return (
-    <View className="flex-1">
+    <View style={{ flex: 1 }}>
       <MapView
         style={{ flex: 1 }}
         initialRegion={defaultRegion}
         onPress={handlePress}
       >
-        {location && <Marker coordinate={location} />}
+        {/* Tile de OpenStreetMap */}
+        <UrlTile
+          urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+          maximumZ={19}
+        />
+
+        {location && (
+          <Marker
+            coordinate={location}
+            draggable // marcador arrastrable
+            onDragEnd={handleDragEnd} // actualizar coordenadas al moverlo
+          />
+        )}
       </MapView>
 
-      <View className="absolute bottom-10 left-6 right-6 flex-row justify-between">
+      <View style={{ position: "absolute", bottom: 10, left: 16, right: 16, flexDirection: "row", justifyContent: "space-between" }}>
         <TouchableOpacity
-          className="bg-gray-400 rounded-xl py-3 px-6 flex-1 mr-2"
+          style={{ backgroundColor: "#9CA3AF", borderRadius: 16, paddingVertical: 12, paddingHorizontal: 24, flex: 1, marginRight: 8 }}
           onPress={handleCancel}
         >
-          <Text className="text-white text-center font-bold">Cancelar</Text>
+          <Text style={{ color: "white", textAlign: "center", fontWeight: "bold" }}>Cancelar</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          className="bg-blue-600 rounded-xl py-3 px-6 flex-1 ml-2"
+          style={{ backgroundColor: "#2563EB", borderRadius: 16, paddingVertical: 12, paddingHorizontal: 24, flex: 1, marginLeft: 8 }}
           onPress={handleConfirm}
         >
-          <Text className="text-white text-center font-bold">Confirmar</Text>
+          <Text style={{ color: "white", textAlign: "center", fontWeight: "bold" }}>Confirmar</Text>
         </TouchableOpacity>
       </View>
     </View>
