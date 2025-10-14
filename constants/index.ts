@@ -102,4 +102,4 @@ export const VenezuelaEstados = Venezuela
 
 // export const API_URL = 'http://10.0.2.2:8000'
 
-export const API_URL = 'http://84.247.169.155:8000'
+export const API_URL = 'https://api.deliveryexpressfast.store'
