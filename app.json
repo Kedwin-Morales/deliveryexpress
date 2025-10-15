@@ -58,6 +58,7 @@
     },
 
     "extra": {
+      "MAPBOX_ACCESS_TOKEN": "pk.eyJ1IjoiYWRyaWFuZWxjYTE2IiwiYSI6ImNtZ3J6b3poczBvNXEybHBuanlhc3ZyemUifQ.BIjJSTufD_G9pcc1KpKsng",
       "router": {},
       "eas": {
         "projectId": "5f760eaf-8a1a-4e9a-8a3e-b278ad887c4b"
