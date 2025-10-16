@@ -17,6 +17,19 @@ allprojects {
   repositories {
     google()
     mavenCentral()
+
+     // 👇 Repositorio oficial de Mapbox
+        maven {
+            url 'https://api.mapbox.com/downloads/v2/releases/maven'
+            authentication {
+                basic(BasicAuthentication)
+            }
+            credentials {
+                // 👇 Este token puede ser público (no tu accessToken del mapa)
+                username = "mapbox"
+                password = project.hasProperty("MAPBOX_DOWNLOADS_TOKEN") ? project.MAPBOX_DOWNLOADS_TOKEN : System.getenv("MAPBOX_DOWNLOADS_TOKEN")
+            }
+        }
     maven { url 'https://www.jitpack.io' }
   }
 }
