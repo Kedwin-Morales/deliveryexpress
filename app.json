@@ -7,7 +7,7 @@
     "icon": "./assets/images/icono-principal.png",
     "scheme": "delivery",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
 
     "ios": {
       "supportsTablet": true
@@ -55,7 +55,7 @@
       [
         "@rnmapbox/maps",
         {
-          "RNMapboxMapsDownloadToken": "pk.eyJ1IjoiYWRyaWFuZWxjYTE2IiwiYSI6ImNtZ3J6b3poczBvNXEybHBuanlhc3ZyemUifQ.BIjJSTufD_G9pcc1KpKsng"
+          "RNMapboxMapsDownloadToken": "sk.eyJ1IjoiYWRyaWFuZWxjYTE2IiwiYSI6ImNtZ3R2ZGhyMzA4eW8ya3B1bm41NjcxdGIifQ.eJ1jE2VhDI9sQWYOLgUIiw"
         }
       ]
     ],
