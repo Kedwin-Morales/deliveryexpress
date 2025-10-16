@@ -86,7 +86,7 @@
 // }
 
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { View, TouchableOpacity, Text, Alert } from "react-native";
 import MapboxGL from "@rnmapbox/maps";
 import { useRouter } from "expo-router";

@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Switch, Alert } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Switch } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import axios from "axios";
 import { API_URL } from "@/constants";
 import { useAuthStore } from "@/store/auth.store";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import PopupMessage from "@/components/PopupMessage";
 
 export default function FormularioOpciones() {
   const { id } = useLocalSearchParams(); // ID del plato
@@ -45,15 +46,6 @@ export default function FormularioOpciones() {
       for (const tipo of tipos) {
         // 1️⃣ Crear el tipo de opción
 
-        console.log({
-            plato: id,
-            nombre: tipo.nombre,
-            obligatorio: tipo.obligatorio,
-            multiple: tipo.multiple,
-            restaurante: user?.$id
-          })
-
-          console.log(token)
         const tipoRes = await axios.post(
           `${API_URL}/api/restaurantes/tipos-opciones/`,
           {
@@ -67,8 +59,6 @@ export default function FormularioOpciones() {
         );
 
         const tipoId = tipoRes.data.id;
-
-        console.log(tipoId)
 
         // 2️⃣ Crear las opciones dentro de ese tipo
         for (const opcion of tipo.opciones) {
@@ -84,13 +74,23 @@ export default function FormularioOpciones() {
         }
       }
 
-      Alert.alert("✅ Éxito", "Opciones creadas correctamente");
+      showPopup("Opciones creadas correctamente", "check-circle");
       router.push("/(comercio)/platos");
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (err) {
-      console.error("Error guardando opciones:", err);
-      Alert.alert("Error", "No se pudieron guardar las opciones");
+      showPopup("No se pudieron guardar las opciones","cancel")
     }
   };
+
+  const [popup, setPopup] = useState({
+        visible: false,
+        message: "",
+        icon: "info" as keyof typeof MaterialIcons.glyphMap,
+    });
+
+    const showPopup = (message: string, icon: keyof typeof MaterialIcons.glyphMap = "info") => {
+        setPopup({ visible: true, message, icon });
+    };
 
   return (
     <SafeAreaView className="flex-1 bg-white">
@@ -180,6 +180,13 @@ export default function FormularioOpciones() {
           <Text className="text-center text-white font-bold text-lg">Guardar Todo</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      <PopupMessage
+                visible={popup.visible}
+                message={popup.message}
+                icon={popup.icon}
+                onClose={() => setPopup((prev) => ({ ...prev, visible: false }))}
+            />
     </SafeAreaView>
   );
 }
