@@ -25,7 +25,12 @@
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION",
         "FOREGROUND_SERVICE"
-      ]
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "${GOOGLE_MAPS_API_KEY}"
+        }
+      }
     },
 
     "androidStatusBar": {
@@ -50,13 +55,6 @@
           "resizeMode": "contain",
           "backgroundColor": "#003399"
         }
-      ],
-
-      [
-        "@rnmapbox/maps",
-        {
-          "RNMapboxMapsDownloadToken": "sk.eyJ1IjoiYWRyaWFuZWxjYTE2IiwiYSI6ImNtZ3R2ZGhyMzA4eW8ya3B1bm41NjcxdGIifQ.eJ1jE2VhDI9sQWYOLgUIiw"
-        }
       ]
     ],
 
@@ -65,7 +63,6 @@
     },
 
     "extra": {
-      "MAPBOX_ACCESS_TOKEN": "pk.eyJ1IjoiYWRyaWFuZWxjYTE2IiwiYSI6ImNtZ3J6b3poczBvNXEybHBuanlhc3ZyemUifQ.BIjJSTufD_G9pcc1KpKsng",
       "router": {},
       "eas": {
         "projectId": "5f760eaf-8a1a-4e9a-8a3e-b278ad887c4b"
