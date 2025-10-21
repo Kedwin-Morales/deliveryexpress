@@ -73,7 +73,7 @@ export default function WalletComponent() {
         <SafeAreaView className="flex-1 p-4 bg-white">
 
             <View className="flex-row items-center px-4 py-3 bg-white justify-between">
-                <TouchableOpacity onPress={() => router.replace('/(delivery)')} className="flex-row items-center">
+                <TouchableOpacity onPress={() => router.replace('/(comercio)/perfil')} className="flex-row items-center">
                     <Ionicons name="arrow-back" size={22} color="#003399" />
                     <Text className="text-xl font-bold text-primary ml-2">Atrás</Text>
                 </TouchableOpacity>
@@ -87,7 +87,7 @@ export default function WalletComponent() {
                 <View className="items-center justify-center flex-1">
                     <Text className="text-lg mb-4">No tienes wallet aún</Text>
                     <TouchableOpacity
-                        className="bg-secondary px-6 py-3 rounded-lg"
+                        className="bg-blue-600 px-6 py-3 rounded-lg"
                         onPress={handleCrearWallet}
                         disabled={creating}
                     >

@@ -196,3 +196,19 @@ interface Orden {
   cliente_telefono?:string;
   cliente_foto?:string;
 }
+
+// src/types/wallet.ts
+
+export interface Movimiento {
+  id: string;
+  tipo: 'ingreso' | 'retiro' | 'ajuste';
+  monto: string; // Django devuelve Decimal como string
+  descripcion: string;
+  creado_en: string; // ISO date string
+}
+
+export interface Wallet {
+  id: string;
+  saldo: string; // también viene como string
+  movimientos: Movimiento[];
+}

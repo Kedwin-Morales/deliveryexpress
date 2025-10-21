@@ -153,6 +153,13 @@ if (debeRegistrar && !estaEnRegistro && !estaEnSeleccionDireccion) {
                     tabBarStyle: { display: 'none' } // 👈 oculta el tab bar en esta pantalla
                 }}
             />
+            <Tabs.Screen
+                name="wallet/wallet"
+                options={{
+                    href: null, // 👈 evita que aparezca como tab
+                    tabBarStyle: { display: 'none' } // 👈 oculta el tab bar en esta pantalla
+                }}
+            />
         </Tabs>
     );
 }

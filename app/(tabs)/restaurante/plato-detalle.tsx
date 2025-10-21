@@ -28,31 +28,14 @@ export default function PlatoDetalle() {
 
       setPlato(res.data);
 
+      console.log(res.data.tipos_opciones)
+      setTiposOpciones(res.data.tipos_opciones || []);
+
       const restauranteRes = await axios.get(
         `${API_URL}/api/restaurantes/restaurantes/${res.data.restaurante}/`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setRestaurante(restauranteRes.data);
-
-      // Cargar tipos de opciones del plato
-      const tiposRes = await axios.get(
-        `${API_URL}/api/restaurantes/tipos-opciones/?plato=${id}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      const tipos = tiposRes.data;
-
-      // Traer opciones de cada tipo
-      const tiposConOpciones = await Promise.all(
-        tipos.map(async (tipo: any) => {
-          const opcionesRes = await axios.get(
-            `${API_URL}/api/restaurantes/opciones/?tipo=${tipo.id}`,
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-          return { ...tipo, opciones: opcionesRes.data };
-        })
-      );
-
-      setTiposOpciones(tiposConOpciones);
     } catch (err) {
       console.log("Error obteniendo plato o tipos:", err);
     }
@@ -87,38 +70,55 @@ export default function PlatoDetalle() {
   const calculateTotal = () => {
     if (!plato) return 0;
 
-    const base = plato.precio_descuento ?? plato.precio;
+    const base = Number(plato.precio_descuento ?? plato.precio) || 0;
     let extras = 0;
 
     tiposOpciones.forEach((tipo) => {
       const seleccionadas = selecciones[tipo.id] || [];
       seleccionadas.forEach((opId) => {
         const op = tipo.opciones.find((o: any) => o.id === opId);
-        if (op) extras += op.precio_adicional;
+        if (op) extras += Number(op.precio_adicional) || 0;
       });
     });
 
     return (base + extras) * quantity;
   };
 
+
   const handleAddToCart = () => {
-    const extrasSeleccionados = tiposOpciones.flatMap((tipo) => {
-      const seleccionadas = selecciones[tipo.id] || [];
-      return tipo.opciones.filter((op: any) => seleccionadas.includes(op.id));
-    });
+  // Validar obligatorios
+  const faltantes = tiposOpciones.filter(
+    (tipo) => tipo.obligatorio && (!selecciones[tipo.id] || selecciones[tipo.id].length === 0)
+  );
 
-    agregarAlCarrito({
-      id: plato?.id?.toString() ?? "",
-      nombre: plato?.nombre ?? "",
-      precio: plato?.precio_descuento ?? plato?.precio ?? 0,
-      imagen: plato?.imagen ?? "",
-      nombre_restaurante: restaurante?.nombre || "",
-      cantidad: quantity,
-      restauranteId: restaurante?.id || "",
-    });
+  if (faltantes.length > 0) {
+    alert(`Debes seleccionar al menos una opción en: ${faltantes.map((f) => f.nombre).join(", ")}`);
+    return;
+  }
 
-    router.back();
-  };
+  const extrasSeleccionados = tiposOpciones.flatMap((tipo) => {
+    const seleccionadas = selecciones[tipo.id] || [];
+    return tipo.opciones.filter((op: any) => seleccionadas.includes(op.id));
+  });
+
+  agregarAlCarrito({
+    id: plato?.id?.toString() ?? "",
+    nombre: plato?.nombre ?? "",
+    precio: Number(plato?.precio_descuento ?? plato?.precio ?? 0),
+    imagen: plato?.imagen ?? "",
+    nombre_restaurante: restaurante?.nombre || "",
+    cantidad: quantity,
+    restauranteId: restaurante?.id || "",
+    extras: extrasSeleccionados.map((e) => ({
+      id: e.id,
+      nombre: e.nombre,
+      precio_adicional: Number(e.precio_adicional),
+    })),
+  });
+
+  router.back();
+};
+
 
   return (
     <SafeAreaView className="flex-1 bg-white">
@@ -148,11 +148,15 @@ export default function PlatoDetalle() {
         />
 
         {/* Info principal */}
-        <Text className="text-2xl font-extrabold mb-2">{plato?.nombre}</Text>
-        <Text className="text-gray-600 mb-4">{plato?.descripcion}</Text>
-        <Text className="text-xl font-bold text-primary mb-4">
-          {plato?.precio_descuento ?? plato?.precio} $
-        </Text>
+        <View className="flex-row justify-between">
+          <Text className="text-2xl font-extrabold w-3/4">{plato?.nombre}</Text>
+          <Text className="text-xl font-bold text-primary">
+            {plato?.precio_descuento ?? plato?.precio} $
+          </Text>
+        </View>
+        <Text className="text-xl font-semibold mt-2">Detalles</Text>
+        <Text className="text-lg mb-4">{plato?.descripcion}</Text>
+
 
         {/* 🔹 Tipos y opciones dinámicas */}
         {tiposOpciones.map((tipo) => (
@@ -171,17 +175,15 @@ export default function PlatoDetalle() {
                   onPress={() =>
                     toggleOpcion(tipo.id, op.id, tipo.multiple)
                   }
-                  className={`p-3 rounded-xl mb-2 border ${
-                    isSelected
+                  className={`p-3 rounded-xl mb-2 border ${isSelected
                       ? "bg-primary/10 border-primary"
                       : "bg-gray-100 border-gray-200"
-                  }`}
+                    }`}
                 >
                   <View className="flex-row justify-between items-center">
                     <Text
-                      className={`font-bold ${
-                        isSelected ? "text-primary" : "text-gray-900"
-                      }`}
+                      className={`font-bold ${isSelected ? "text-primary" : "text-gray-900"
+                        }`}
                     >
                       {op.nombre}
                     </Text>

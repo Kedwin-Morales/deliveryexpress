@@ -101,6 +101,10 @@ export default function ComercioHome() {
           </View>
         </View>
 
+        <TouchableOpacity className='bg-primary self-center px-4 py-3 rounded-md mt-4' onPress={ ()=> router.replace('/(comercio)/wallet/wallet')}>
+          <Text className='text-white font-medium'>Ver Cartera</Text>
+        </TouchableOpacity>
+
         {/* Tendencias */}
         <Text className="text-center text-secondary mt-8 text-xl font-bold">Tendencias de ventas</Text>
 

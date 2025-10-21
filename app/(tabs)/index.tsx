@@ -322,55 +322,16 @@ export default function Index() {
                                             <Text className="text-gray-800 text-lg font-bold">${item.precio}</Text>
                                         )}
 
-                                        {/* Contador */}
-                                        {carrito.find((c) => c.id === item.id.toString()) ? (
-                                            <View className="flex-row items-center gap-2">
-                                                <TouchableOpacity
-                                                    onPress={() => quitarDelCarrito(item.id.toString())}
-                                                    className="w-8 h-8 rounded-full items-center bg-gray-300 justify-center"
-                                                >
-                                                    <Text className="text-xl font-bold">−</Text>
-                                                </TouchableOpacity>
-
-                                                <Text className="text-lg font-semibold text-gray-800">
-                                                    {carrito.find((c) => c.id === item.id.toString())?.cantidad}
-                                                </Text>
-
-                                                <TouchableOpacity
-                                                    onPress={() =>
-                                                        agregarAlCarrito({
-                                                            id: item.id.toString(),
-                                                            nombre: item.nombre,
-                                                            precio: item.item.precio,
-                                                            imagen: item.imagen,
-                                                            nombre_restaurante: item.restaurante_nombre || "",
-                                                            restauranteId: item.restaurante || "",
-                                                            precio_descuento: item.precio_descuento,
-                                                            descripcion: item.descripcion
-                                                        })
-                                                    }
-                                                    className="w-8 h-8 rounded-full bg-primary items-center justify-center"
-                                                >
-                                                    <Text className="text-xl text-white">+</Text>
-                                                </TouchableOpacity>
-                                            </View>
-                                        ) : (
                                             <TouchableOpacity
-                                                onPress={() =>
-                                                    agregarAlCarrito({
-                                                        id: item.id.toString(),
-                                                        nombre: item.nombre,
-                                                        precio: item.precio_descuento ?? item.precio,
-                                                        imagen: item.imagen,
-                                                        nombre_restaurante: item.restaurante_nombre || "",
-                                                        restauranteId: item.restaurante || "",
-                                                    })
+                                                onPress={() =>router.push({
+                                                    pathname: "/restaurante/plato-detalle",
+                                                    params: { id: item.id.toString() },
+                                                })
                                                 }
                                                 className="w-10 h-10 rounded-full bg-primary items-center justify-center"
                                             >
                                                 <Text className="text-xl font-bold text-white">+</Text>
                                             </TouchableOpacity>
-                                        )}
                                     </View>
                                 </View>
                             </TouchableOpacity>

@@ -136,56 +136,18 @@ const RestaurantePlatos = () => {
                         </Text>
                       )}
 
-                      {/* Si no hay en carrito -> botón agregar */}
-                      {carrito.find((c) => c.id === p.id.toString()) ? (
-                        <View className="flex-row items-center gap-2">
-                          <TouchableOpacity
-                            onPress={() => {
-                              agregarAlCarrito({
-                                id: p.id.toString(),
-                                nombre: p.nombre,
-                                precio: p.precio,
-                                imagen: p.imagen,
-                                nombre_restaurante: restaurante?.nombre || "",
-                                descripcion : p.descripcion,
-                                precio_descuento: p.precio_descuento
-                              })
-                            }
-                            }
-                            className="border border-primary px-3 py-1 rounded-full"
-                          >
-                            <Text className="text-lg font-bold text-primary">+</Text>
-                          </TouchableOpacity>
-
-                          <Text className="text-base font-bold">
-                            {carrito.find((c) => c.id === p.id.toString())?.cantidad}
-                          </Text>
-
-                          <TouchableOpacity
-                            onPress={() => quitarDelCarrito(p.id.toString())}
-                            className="px-3 py-1 rounded-full border border-primary"
-                          >
-                            <Text className="text-lg font-bold text-primary">-</Text>
-                          </TouchableOpacity>
-                        </View>
-                      ) : (
+                      
                         <TouchableOpacity
-                          onPress={() =>
-                            agregarAlCarrito({
-                              id: p.id.toString(),
-                              nombre: p.nombre,
-                              precio: p.precio,
-                              imagen: p.imagen,
-                              nombre_restaurante: restaurante?.nombre || "",
-                              precio_descuento: p.precio_descuento,
-                              descripcion: p.descripcion
-                            })
+                          onPress={() => router.push({
+                            pathname: "/restaurante/plato-detalle",
+                            params: { id: p.id.toString() },
+                          })
                           }
                           className="bg-primary px-3 py-1 rounded-full"
                         >
                           <Text className="text-white">Añadir</Text>
                         </TouchableOpacity>
-                      )}
+                      
                     </View>
                   </View>
                 </View>
