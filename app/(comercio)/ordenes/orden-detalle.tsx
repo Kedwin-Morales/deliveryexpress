@@ -67,7 +67,7 @@ export default function OrdenDetalle() {
         { estado: nuevoEstado },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      Alert.alert('Éxito', `Orden actualizada a "${nuevoEstado}"`);
+      Alert.alert('Éxito', `Orden actualizada a Esperando aceptacion`);
       fetchOrden(); // refrescar datos
     } catch (err: any) {
       console.log('Error al actualizar la orden:', err?.response?.data);

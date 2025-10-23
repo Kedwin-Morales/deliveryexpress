@@ -14,6 +14,7 @@ import { MaterialIcons } from '@expo/vector-icons'
 const SignUp = () => {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const rol = useAuthStore((state) => state.selectedRole)
+  const login = useAuthStore((state) => state.login);
 
   const [form, setForm] = useState({
     nombre: '',
@@ -73,10 +74,41 @@ const SignUp = () => {
       }
 
       await axios.post(`${API_URL}/api/user/register/`, payload)
-      showPopup('Cuenta creada correctamente', 'check-circle');
+      
+      showPopup('Cuenta creada correctamente', 'check-circle')
+
+      // 👇 2. Iniciar sesión automáticamente
+      const loginResponse = await axios.post(`${API_URL}/api/user/login/`, {
+        email: form.email,
+        password: form.password,
+      })
+
+      const { usuario, token } = loginResponse.data
+
+      // 👇 3. Guardar en Zustand
+      login({
+        nombre: usuario.nombre,
+        email: usuario.email,
+        rol: usuario.rol,
+        token: token.access,
+        $id: usuario.id,
+        telefono: usuario.telefono,
+        foto_perfil: usuario.foto_perfil,
+        foto_perfil_url: usuario.foto_perfil_url,
+        $collectionId: '',
+        $databaseId: '',
+        $createdAt: '',
+        $updatedAt: '',
+        $permissions: [],
+      })
+
+      // 👇 4. Redirigir según el rol
       setTimeout(() => {
-        router.replace('/')
-      }, 1000);
+        if (usuario.rol === 'comercio') router.replace('/(comercio)')
+        if (usuario.rol === 'cliente') router.replace('/(tabs)')
+        if (usuario.rol === 'conductor') router.replace('/(delivery)')
+      }, 1000)
+
       
     } catch (error: any) {
       showPopup('Ocurrió un error al registrarte' , 'cancel')

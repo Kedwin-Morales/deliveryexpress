@@ -1,12 +1,12 @@
 import { View, Text, ScrollView, TouchableOpacity, Alert, Image, Modal } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import axios from "axios";
 import { API_URL } from "@/constants";
 import { useAuthStore } from "@/store/auth.store";
 import { Estado, Orden } from "@/type";
-import { Feather, Ionicons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import RutaMapa from "@/components/RutaMapa";
 import * as Clipboard from "expo-clipboard";
 
@@ -172,16 +172,13 @@ export default function OrdenDetalle() {
 
                 </View>
 
-                {/* <RutaMapa
-                 origen={{
-                        latitude: user?.latitud ?? 10.4806,   // fallback si no hay datos
-                        longitude: user?.longitud ?? -66.9036,
-                    }}
+                <RutaMapa
+                    ordenId={orden.id}
                     destino={{
-                        latitude: orden.latitud_entrega,
-                        longitude: orden.longitud_entrega,
+                        latitude: orden.latitud ?? 10.4806,
+                        longitude: orden.longitud ??  -66.9036,
                     }}
-                 /> */}
+                 />
 
                 {/* Botones según estado */}
                 {orden.estado_nombre?.toLowerCase() === "asignada" && (

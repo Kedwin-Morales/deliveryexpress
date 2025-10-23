@@ -103,7 +103,10 @@ const Profile = () => {
             <>
               <View className="bg-gray-100 rounded-2xl elevation-lg">
                 {recentOrders.map((order) => (
-                  <TouchableOpacity key={order.id} className="flex-row justify-between p-4" onPress={() => router.push('/(tabs)/perfil/orden-detalle')}>
+                  <TouchableOpacity key={order.id} className="flex-row justify-between p-4" onPress={() => router.push({
+                    pathname: "/perfil/orden-detalle",
+                    params: { id: order.id.toString() },
+                  })}>
                     <View>
                       <Text className="font-bold">Pedido #{order.numero_orden}</Text>
                       <Text className="text-sm text-gray-800"> {order.creado_en

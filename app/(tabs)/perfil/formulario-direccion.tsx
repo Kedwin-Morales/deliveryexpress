@@ -51,21 +51,37 @@ export default function FormularioDireccion() {
           } catch (error) {
             console.error("Error al cargar dirección:", error);
           }
+        } else {
+          // 🧹 Limpiar formulario cuando NO hay id (modo crear)
+          resetForm();
         }
       };
+
+      const resetForm = () => {
+        setNombre("");
+        setEstado("");
+        setMunicipio("");
+        setCalle("");
+        setPuntoReferencia("");
+        setLatitud(0.0);
+        setLongitud(0.0);
+        setEsPredeterminada(false);
+      };
+
       fetchDireccion();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [id])
   );
 
+
   // 🔹 Cargar estados desde el JSON importado
   useEffect(() => {
-  const mappedEstados = VenezuelaEstados.map(e => ({
-    nombre: e.estado,
-    municipios: e.municipios.map(m => m.municipio)
-  }));
-  setEstadosData(mappedEstados);
-}, []);
+    const mappedEstados = VenezuelaEstados.map(e => ({
+      nombre: e.estado,
+      municipios: e.municipios.map(m => m.municipio)
+    }));
+    setEstadosData(mappedEstados);
+  }, []);
 
 
   // 🔹 Actualizar municipios al cambiar estado

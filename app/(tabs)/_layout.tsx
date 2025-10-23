@@ -88,6 +88,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="registros/confirmacion-telefono" options={{ href: null, tabBarStyle: { display: "none" } }} />
       <Tabs.Screen name="registros/confirmacion-email" options={{ href: null, tabBarStyle: { display: "none" } }} />
       <Tabs.Screen name="registros/foto-perfil" options={{ href: null, tabBarStyle: { display: "none" } }} />
+      <Tabs.Screen name="perfil/mapa-direccion" options={{ href: null, tabBarStyle: { display: "none" } }} />
     </Tabs>
   );
 }

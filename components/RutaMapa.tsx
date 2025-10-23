@@ -1,79 +1,104 @@
-import { useEffect, useState, useRef } from "react";
-import { ActivityIndicator, View } from "react-native";
-import MapView, { Polyline, Marker } from "react-native-maps";
+// components/RutaMapaTiempoReal.tsx
+import React, { useEffect, useState, useRef } from "react";
+import { View } from "react-native";
+import MapView, { Marker } from "react-native-maps";
+import MapViewDirections from "react-native-maps-directions";
 import axios from "axios";
+import { API_URL } from "@/constants";
+import { useAuthStore } from "@/store/auth.store";
 
-interface Coord {
-  latitude: number;
-  longitude: number;
-}
+const GOOGLE_MAPS_APIKEY = "AIzaSyDGW53aLubZK0HAmlRi2x-FrgpuK6Ce2m8"; // ⚠️ Coloca tu API Key
 
-interface RutaMapaProps {
-  origen: Coord;   // 🚴 Ubicación del delivery
-  destino: Coord;  // 📍 Ubicación del pedido (cliente)
-}
-
-const RutaMapa = ({ origen, destino }: RutaMapaProps) => {
-  const [coords, setCoords] = useState<Coord[]>([]);
-  const [loading, setLoading] = useState(true);
+export default function RutaMapaTiempoReal({
+  ordenId,
+  destino,
+}: {
+  ordenId: string;
+  destino: { latitude: number; longitude: number };
+}) {
+  const { user } = useAuthStore();
+  const [ubicacionConductor, setUbicacionConductor] = useState<any>(null);
   const mapRef = useRef<MapView>(null);
 
+  // 🔄 Actualizar ubicación del conductor cada 5 s
   useEffect(() => {
-    const fetchRuta = async () => {
+    let interval: ReturnType<typeof setInterval>;
+
+    const fetchUbicacion = async () => {
       try {
-        const url = `http://161.97.137.192:5000/route/v1/driving/${origen.longitude},${origen.latitude};${destino.longitude},${destino.latitude}?overview=full&geometries=geojson`;
-
-        const res = await axios.get(url);
-
-        // GeoJSON: [lng, lat]
-        const routeCoords: Coord[] = res.data.routes[0].geometry.coordinates.map(
-          (c: [number, number]) => ({
-            latitude: c[1],
-            longitude: c[0],
-          })
+        const res = await axios.get(
+          `${API_URL}/api/ordenes/ordenes/${ordenId}/ubicacion-conductor/`,
+          { headers: { Authorization: `Bearer ${user?.token}` } }
         );
-
-        setCoords(routeCoords);
-
-        // Ajustar cámara al trazar la ruta
-        if (mapRef.current) {
-          mapRef.current.fitToCoordinates(routeCoords, {
-            edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
-            animated: true,
-          });
-        }
+        setUbicacionConductor({
+          latitude: res.data.latitud,
+          longitude: res.data.longitud,
+        });
       } catch (err) {
-        console.log("Error obteniendo la ruta:", err);
-      } finally {
-        setLoading(false);
+        console.log("Error obteniendo ubicación del conductor:", err);
       }
     };
 
-    fetchRuta();
-  }, [origen, destino]);
+    fetchUbicacion();
+    interval = setInterval(fetchUbicacion, 5000); // cada 5 s
 
-  if (loading) {
-    return <ActivityIndicator size="large" style={{ flex: 1 }} />;
-  }
+    return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ordenId]);
+
+  // Centrar mapa si cambia ubicación
+  useEffect(() => {
+    if (ubicacionConductor && mapRef.current) {
+      mapRef.current.animateToRegion({
+        latitude: ubicacionConductor.latitude,
+        longitude: ubicacionConductor.longitude,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      });
+    }
+  }, [ubicacionConductor]);
+
+  if (!ubicacionConductor) return null;
 
   return (
-    <View style={{ height: 300, borderRadius: 12, overflow: "hidden", marginBottom: 16 }}>
+    <View
+      style={{
+        height: 350,
+        width: "100%",
+        marginTop: 20,
+        borderRadius: 15,
+        overflow: "hidden",
+      }}
+    >
       <MapView
         ref={mapRef}
-        style={{ width: "100%", height: "100%" }}
+        style={{ flex: 1 }}
         initialRegion={{
-          latitude: origen.latitude,
-          longitude: origen.longitude,
-          latitudeDelta: 0.1,
-          longitudeDelta: 0.1,
+          latitude: ubicacionConductor.latitude,
+          longitude: ubicacionConductor.longitude,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
         }}
       >
-        <Polyline coordinates={coords} strokeColor="#007bff" strokeWidth={4} />
-        <Marker coordinate={origen} title="🚴 Delivery" />
-        <Marker coordinate={destino} title="📍 Pedido" />
+        {/* 🚚 Conductor */}
+        <Marker
+          coordinate={ubicacionConductor}
+          title="Conductor"
+          pinColor="green"
+        />
+
+        {/* 📍 Cliente */}
+        <Marker coordinate={destino} title="Destino" pinColor="red" />
+
+        {/* 🛣️ Ruta */}
+        <MapViewDirections
+          origin={ubicacionConductor}
+          destination={destino}
+          apikey={GOOGLE_MAPS_APIKEY}
+          strokeWidth={4}
+          strokeColor="blue"
+        />
       </MapView>
     </View>
   );
-};
-
-export default RutaMapa;
+}

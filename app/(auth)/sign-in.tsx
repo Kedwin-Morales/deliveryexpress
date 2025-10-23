@@ -8,6 +8,8 @@ import axios from 'axios';
 import { API_URL, images } from '@/constants';
 import { MaterialIcons } from '@expo/vector-icons';
 import PopupMessage from '@/components/PopupMessage';
+// import { registerForPushNotificationsAsync } from '@/src/utils/notifications';
+
 
 const SignIn = () => {
   const [form, setForm] = useState({ email: '', password: '' });
@@ -24,7 +26,6 @@ const SignIn = () => {
   const showPopup = (message: string, icon: keyof typeof MaterialIcons.glyphMap = "info") => {
     setPopup({ visible: true, message, icon });
   };
-
 
   const submit = async () => {
     if (!form.email || !form.password) {
@@ -53,13 +54,29 @@ const SignIn = () => {
         foto_perfil_url: usuario.foto_perfil_url,
       });
 
+      // const expoPushToken = await registerForPushNotificationsAsync();
+      // if (expoPushToken) {
+      //   try {
+      //     // await axios.post(
+      //     //   `${API_URL}/api/user/save-expo-token/`,
+      //     //   { user_id: usuario.id, expo_token: expoPushToken },
+      //     //   { headers: { Authorization: `Bearer ${token.access}` } }
+      //     // );
+
+      //     console.log({ user_id: usuario.id, expo_token: expoPushToken })
+      //     console.log('Token guardado en el backend ✅');
+      //   } catch (err) {
+      //     console.warn('No se pudo guardar el token en el servidor ❌', err);
+      //   }
+      // }
+
       showPopup('Inicio sesion correctamente', 'check-circle');
 
-        setTimeout(() => {
-          if (usuario.rol === 'comercio') router.replace('/(comercio)');
-          if (usuario.rol === 'cliente') router.replace('/(tabs)');
-          if (usuario.rol === 'conductor') router.replace('/(delivery)');
-        }, 1000);
+      setTimeout(() => {
+        if (usuario.rol === 'comercio') router.replace('/(comercio)');
+        if (usuario.rol === 'cliente') router.replace('/(tabs)');
+        if (usuario.rol === 'conductor') router.replace('/(delivery)');
+      }, 1000);
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error: any) {
       showPopup('Correo o contraseña incorrectos. Por favor verifica tus datos e inténtalo de nuevo.', 'cancel');

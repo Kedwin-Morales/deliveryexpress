@@ -17,7 +17,6 @@ import { Categoria, Direccion } from "@/type";
 import { useAuthStore } from "@/store/auth.store";
 import { router, useFocusEffect } from "expo-router";
 import { FontAwesome, FontAwesome5, Ionicons, MaterialCommunityIcons, MaterialIcons } from "@expo/vector-icons";
-import { useCarrito } from "@/store/useCart";
 import Carrusel from "@/components/Carrusel";
 import PopupMessage from "@/components/PopupMessage";
 import ScreenLoading from "@/components/ScreenLoading";
@@ -37,7 +36,6 @@ export default function Index() {
     >([]);
     const [platosPromocion, setPlatosPromocion] = useState<any[]>([]);
 
-    const { carrito, agregarAlCarrito, quitarDelCarrito } = useCarrito();
 
     const [popup, setPopup] = useState({
         visible: false,
