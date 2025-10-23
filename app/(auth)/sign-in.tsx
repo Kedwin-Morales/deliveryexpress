@@ -8,7 +8,7 @@ import axios from 'axios';
 import { API_URL, images } from '@/constants';
 import { MaterialIcons } from '@expo/vector-icons';
 import PopupMessage from '@/components/PopupMessage';
-// import { registerForPushNotificationsAsync } from '@/src/utils/notifications';
+import { registerForPushNotificationsAsync } from '@/src/utils/notifications';
 
 
 const SignIn = () => {
@@ -54,21 +54,21 @@ const SignIn = () => {
         foto_perfil_url: usuario.foto_perfil_url,
       });
 
-      // const expoPushToken = await registerForPushNotificationsAsync();
-      // if (expoPushToken) {
-      //   try {
-      //     // await axios.post(
-      //     //   `${API_URL}/api/user/save-expo-token/`,
-      //     //   { user_id: usuario.id, expo_token: expoPushToken },
-      //     //   { headers: { Authorization: `Bearer ${token.access}` } }
-      //     // );
+      const expoPushToken = await registerForPushNotificationsAsync();
+      if (expoPushToken) {
+        try {
+          await axios.post(
+            `${API_URL}/api/user/usuario/registrar-expo-token/`,
+            { expo_token: expoPushToken },
+            { headers: { Authorization: `Bearer ${token.access}` } }
+          );
 
-      //     console.log({ user_id: usuario.id, expo_token: expoPushToken })
-      //     console.log('Token guardado en el backend ✅');
-      //   } catch (err) {
-      //     console.warn('No se pudo guardar el token en el servidor ❌', err);
-      //   }
-      // }
+          console.log({ user_id: usuario.id, expo_token: expoPushToken })
+          console.log('Token guardado en el backend ✅');
+        } catch (err) {
+          console.warn('No se pudo guardar el token en el servidor ❌', err);
+        }
+      }
 
       showPopup('Inicio sesion correctamente', 'check-circle');
 
