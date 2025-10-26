@@ -1,21 +1,42 @@
-import { useState } from "react";
-import { View, Text, TouchableOpacity } from "react-native";
+import { useState, useEffect } from "react";
+import { View, Text, TouchableOpacity, Alert } from "react-native";
 import MapView, { Marker, MapPressEvent } from "react-native-maps";
+import * as Location from "expo-location";
 import { useRouter } from "expo-router";
 
 export default function SeleccionarDireccion() {
   const router = useRouter();
   const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-
-  // Región inicial → Guarenas
-  const defaultRegion = {
-    latitude: 10.476,
+  const [region, setRegion] = useState({
+    latitude: 10.476,  // Default Guarenas
     longitude: -66.599,
     latitudeDelta: 0.05,
     longitudeDelta: 0.05,
-  };
+  });
 
-  // Cuando el usuario toca el mapa, guardamos el punto
+  // 🔹 Obtener ubicación inicial del dispositivo
+  useEffect(() => {
+    const initLocation = async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted") {
+          Alert.alert("Permiso denegado", "No se pudo acceder a tu ubicación");
+          return;
+        }
+
+        const currentLocation = await Location.getCurrentPositionAsync({});
+        const { latitude, longitude } = currentLocation.coords;
+
+        setLocation({ latitude, longitude });
+        setRegion((prev) => ({ ...prev, latitude, longitude }));
+      } catch (error) {
+        console.log("Error obteniendo ubicación:", error);
+      }
+    };
+
+    initLocation();
+  }, []);
+
   const handlePress = (event: MapPressEvent) => {
     const { latitude, longitude } = event.nativeEvent.coordinate;
     setLocation({ latitude, longitude });
@@ -33,15 +54,17 @@ export default function SeleccionarDireccion() {
   };
 
   const handleCancel = () => {
-    router.push('/(tabs)/perfil/formulario-direccion'); // 👈 Volvemos sin cambiar nada
+    router.push('/(tabs)/perfil/formulario-direccion');
   };
 
   return (
     <View className="flex-1">
       <MapView
         style={{ flex: 1 }}
-        initialRegion={defaultRegion}
+        initialRegion={region}
+        region={region}
         onPress={handlePress}
+        showsUserLocation
       >
         {location && <Marker coordinate={location} />}
       </MapView>

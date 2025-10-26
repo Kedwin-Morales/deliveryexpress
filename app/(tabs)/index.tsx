@@ -21,22 +21,18 @@ import Carrusel from "@/components/Carrusel";
 import PopupMessage from "@/components/PopupMessage";
 import ScreenLoading from "@/components/ScreenLoading";
 
+const MAX_INTENTOS = 3;
+
 export default function Index() {
     const token = useAuthStore((state) => state.user?.token);
-    const user = useAuthStore((store) => store.user);
-    const [direccionPrincipal, setDireccionPrincipal] = useState<Direccion | null>(
-        null
-    );
-
-    const [loading, setLoading] = useState(true)
+    const [direccionPrincipal, setDireccionPrincipal] = useState<Direccion | null>(null);
+    const [loading, setLoading] = useState(true);
 
     const [restaurantesTop, setRestaurantesTop] = useState<any[]>([]);
-    const [categoriasDisponibles, setCategoriasDisponibles] = useState<
-        Categoria[]
-    >([]);
+    const [categoriasDisponibles, setCategoriasDisponibles] = useState<Categoria[]>([]);
     const [platosPromocion, setPlatosPromocion] = useState<any[]>([]);
 
-
+    // 🔹 Popup
     const [popup, setPopup] = useState({
         visible: false,
         message: "",
@@ -47,18 +43,34 @@ export default function Index() {
         setPopup({ visible: true, message, icon });
     };
 
+    // 🔹 Función genérica con reintentos
+    const fetchConIntentos = async (fetchFn: () => Promise<any>) => {
+        let intentos = 0;
+        while (intentos < MAX_INTENTOS) {
+            try {
+                return await fetchFn();
+            } catch (err) {
+                intentos++;
+                console.log(`Intento ${intentos} fallido:`, err);
+                if (intentos >= MAX_INTENTOS) throw err;
+            }
+        }
+    };
+
     const fetchValidacion = async () => {
         try {
-            const res = await axios.get(`${API_URL}/api/user/usuario/`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            const res = await fetchConIntentos(() =>
+                axios.get(`${API_URL}/api/user/usuario/`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                })
+            );
 
             const data = Array.isArray(res.data) ? res.data[0] : res.data;
 
             const email = data.verificacion_email;
             const telefono = data.verificacion_telefono;
             const cedula = data.verificacion_identidad;
-            // Paso 1: Validar cuenta
+
             if (!email || !telefono || !cedula) {
                 showPopup("Debes confirmar tu cuenta antes de continuar.", "warning");
                 setTimeout(() => {
@@ -67,108 +79,104 @@ export default function Index() {
             }
         } catch (err) {
             console.log("Error en validación de usuario:", err);
+            showPopup("No se pudo validar tu cuenta", "error");
         }
     };
 
-
-    /** 🔹 Obtener categorías */
     const fetchCategorias = async () => {
         try {
-            const res = await axios.get(`${API_URL}/api/restaurantes/categorias/`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            const res = await fetchConIntentos(() =>
+                axios.get(`${API_URL}/api/restaurantes/categorias/`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                })
+            );
             setCategoriasDisponibles(res.data);
         } catch (err) {
             console.log("Error obteniendo categorías:", err);
+            showPopup("No se pudieron cargar las categorías", "error");
         }
     };
 
     const fetchRestaurantes = async () => {
         try {
-            const res = await axios.get(`${API_URL}/api/restaurantes/restaurantes/`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            const res = await fetchConIntentos(() =>
+                axios.get(`${API_URL}/api/restaurantes/restaurantes/`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                })
+            );
 
             const top = [...res.data]
-                .sort(
-                    (a, b) => (b.calificacion_promedio || 0) - (a.calificacion_promedio || 0)
-                )
+                .sort((a, b) => (b.calificacion_promedio || 0) - (a.calificacion_promedio || 0))
                 .slice(0, 5);
 
             setRestaurantesTop(top);
         } catch (err) {
             console.log("Error obteniendo restaurantes:", err);
+            showPopup("No se pudieron cargar los restaurantes", "error");
         }
     };
 
-    /** 🔹 Obtener platos con descuento */
     const fetchPlatos = async () => {
         try {
-            const res = await axios.get(`${API_URL}/api/restaurantes/platos/`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            const res = await fetchConIntentos(() =>
+                axios.get(`${API_URL}/api/restaurantes/platos/`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                })
+            );
 
             const platosConDescuento = res.data.map((plato: any) => {
                 const descuento =
                     plato.precio && plato.precio_descuento
-                        ? Math.round(
-                            ((plato.precio - plato.precio_descuento) / plato.precio) * 100
-                        )
+                        ? Math.round(((plato.precio - plato.precio_descuento) / plato.precio) * 100)
                         : 0;
-
                 return { ...plato, descuento };
             });
 
-            const ordenados = [...platosConDescuento].sort(
-                (a, b) => b.descuento - a.descuento
-            );
+            const ordenados = [...platosConDescuento].sort((a, b) => b.descuento - a.descuento);
             setPlatosPromocion(ordenados);
         } catch (err) {
             console.log("Error obteniendo platos:", err);
+            showPopup("No se pudieron cargar los platos", "error");
         }
     };
 
     const fetchDireccionPrincipal = async () => {
         try {
-            const res = await axios.get(`${API_URL}/api/user/direcciones/`, {
-                headers: { Authorization: `Bearer ${user?.token}` },
-            });
+            const res = await fetchConIntentos(() =>
+                axios.get(`${API_URL}/api/user/direcciones/`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                })
+            );
             const principal = res.data.find((d: Direccion) => d.es_predeterminada);
             setDireccionPrincipal(principal || null);
         } catch (err) {
             console.log("Error obteniendo direcciones:", err);
+            showPopup("No se pudo cargar la dirección principal", "error");
         }
     };
 
     useEffect(() => {
         fetchValidacion();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
-
+    }, []);
 
     useFocusEffect(
         useCallback(() => {
-            fetchCategorias();
-            fetchPlatos();
-            fetchRestaurantes();
-            fetchDireccionPrincipal();
-            fetchValidacion();
-            setLoading(false)
-
-            // eslint-disable-next-line react-hooks/exhaustive-deps
+            const fetchAll = async () => {
+                setLoading(true);
+                await Promise.all([fetchCategorias(), fetchPlatos(), fetchRestaurantes(), fetchDireccionPrincipal(), fetchValidacion()]);
+                setLoading(false);
+            };
+            fetchAll();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         }, [])
     );
 
-    if(loading){
-        return <ScreenLoading />
-    }
+    if (loading) return <ScreenLoading />;
 
     return (
         <SafeAreaView className="flex-1 bg-white">
-            <ScrollView
-                contentContainerStyle={{ paddingBottom: 100 }}
-                showsVerticalScrollIndicator={false}
-            >
+            <ScrollView contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
                 {/* 🔹 Card Dirección + Perfil */}
                 <View className="flex-row justify-between items-center bg-white rounded-2xl px-4 py-3 mb-2 mt-2 mx-4">
                     <TouchableOpacity onPress={() => router.push('/(tabs)/perfil/direccion')} className="flex-row gap-2 items-center">
@@ -193,18 +201,13 @@ export default function Index() {
                             placeholderTextColor="#70747a"
                             onFocus={() => router.push("/search")}
                         />
-                        <Image
-                            source={images.search}
-                            className="w-5 h-5 mr-2"
-                            resizeMode="contain"
-                        />
+                        <Image source={images.search} className="w-5 h-5 mr-2" resizeMode="contain" />
                     </View>
                 </TouchableOpacity>
 
                 <View className="px-4 h-40 mb-4">
                     <Carrusel />
                 </View>
-
 
                 {/* 🔹 Categorías */}
                 <FlatList
@@ -213,42 +216,21 @@ export default function Index() {
                     keyExtractor={(item) => item.id}
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={{ paddingHorizontal: 8 }}
-                    renderItem={({ item }) => {
-                        return (
-                            <TouchableOpacity
-                                onPress={() =>
-                                    router.push({
-                                        pathname: '/(tabs)/search',
-                                        params: { categoriaSeleccionada: item.nombre }
-                                    })
-                                }
-                                className={`px-2 items-center`}
-
-                            >
-                                <View
-                                    className="mb-2 rounded-lg p-2"
-                                    style={{ backgroundColor: "#666666" }}
-                                >
-                                    <Image
-                                        source={{ uri: item.imagen }}
-                                        className="w-16 h-16 rounded-md"
-                                        resizeMode="cover"
-                                    />
-                                </View>
-                                <Text
-                                    className={`text-sm font-semibold`}
-                                >
-                                    {item.nombre}
-                                </Text>
-                            </TouchableOpacity>
-                        );
-                    }}
+                    renderItem={({ item }) => (
+                        <TouchableOpacity
+                            onPress={() => router.push({ pathname: '/(tabs)/search', params: { categoriaSeleccionada: item.nombre } })}
+                            className="px-2 items-center"
+                        >
+                            <View className="mb-2 rounded-lg p-2" style={{ backgroundColor: "#666666" }}>
+                                <Image source={{ uri: item.imagen }} className="w-16 h-16 rounded-md" resizeMode="cover" />
+                            </View>
+                            <Text className="text-sm font-semibold">{item.nombre}</Text>
+                        </TouchableOpacity>
+                    )}
                 />
 
                 {/* 🔹 Platos con mayor promoción */}
-                <Text className="mt-2 mx-4 mb-4 text-xl font-extrabold">
-                    Top 5 Promociones Especiales
-                </Text>
+                <Text className="mt-2 mx-4 mb-4 text-xl font-extrabold">Top 5 Promociones Especiales</Text>
                 <View className="px-5">
                     <FlatList
                         data={platosPromocion.slice(0, 5)}
@@ -259,43 +241,22 @@ export default function Index() {
                         decelerationRate="fast"
                         renderItem={({ item }) => (
                             <TouchableOpacity
-
                                 className="bg-gray-100 rounded-2xl overflow-hidden w-72 elevation-md"
-                                // 👆 my-2 agrega aire para que no se corte la sombra
-                                onPress={() =>
-                                    router.push({
-                                        pathname: "/restaurante/plato-detalle",
-                                        params: { id: item.id.toString() },
-                                    })
-                                }
+                                onPress={() => router.push({ pathname: "/restaurante/plato-detalle", params: { id: item.id.toString() } })}
                             >
                                 <View className="relative">
-                                    <Image
-                                        source={{ uri: item.imagen }}
-                                        className="w-full h-32"
-                                        resizeMode="cover"
-                                    />
+                                    <Image source={{ uri: item.imagen }} className="w-full h-32" resizeMode="cover" />
                                     {item.descuento > 0 && (
                                         <View className="absolute top-2 left-2 bg-secondary px-2 py-1 rounded-md">
-                                            <Text className="text-white text-sm font-semibold">
-                                                {item.descuento}% OFF
-                                            </Text>
+                                            <Text className="text-white text-sm font-semibold">{item.descuento}% OFF</Text>
                                         </View>
                                     )}
                                 </View>
-
                                 <View className="px-4 py-2">
                                     <View className="flex-row justify-between items-center">
-                                        {/* Nombre del plato */}
-                                        <Text className="text-lg font-bold text-gray-800 flex-shrink">
-                                            {item.nombre}
-                                        </Text>
-
-                                        {/* Puntuación con estrella */}
+                                        <Text className="text-lg font-bold text-gray-800 flex-shrink">{item.nombre}</Text>
                                         <View className="flex-row items-center ml-2">
-                                            <Text className="text-gray-800 text-base font-bold ml-1">
-                                                {item.calificacion_promedio?.toFixed(1) ?? "4.5"}
-                                            </Text>
+                                            <Text className="text-gray-800 text-base font-bold ml-1">{item.calificacion_promedio?.toFixed(1) ?? "4.5"}</Text>
                                             <MaterialCommunityIcons name="star" size={20} color="#FF6600" />
                                         </View>
                                     </View>
@@ -303,33 +264,21 @@ export default function Index() {
                                         <MaterialCommunityIcons name="silverware-fork-knife" size={24} color="#003399" />
                                         <Text>{item.restaurante_nombre}</Text>
                                     </View>
-
-
-                                    {/* Precio + contador */}
                                     <View className="flex-row justify-between items-center mt-2">
                                         {item.descuento > 0 ? (
                                             <View className="flex-row items-center gap-2">
-                                                <Text className="text-primary text-lg font-bold">
-                                                    ${item.precio_descuento}
-                                                </Text>
-                                                <Text className="line-through text-base text-gray-400 mr-2">
-                                                    ${item.precio}
-                                                </Text>
+                                                <Text className="text-primary text-lg font-bold">${item.precio_descuento}</Text>
+                                                <Text className="line-through text-base text-gray-400 mr-2">${item.precio}</Text>
                                             </View>
                                         ) : (
                                             <Text className="text-gray-800 text-lg font-bold">${item.precio}</Text>
                                         )}
-
-                                            <TouchableOpacity
-                                                onPress={() =>router.push({
-                                                    pathname: "/restaurante/plato-detalle",
-                                                    params: { id: item.id.toString() },
-                                                })
-                                                }
-                                                className="w-10 h-10 rounded-full bg-primary items-center justify-center"
-                                            >
-                                                <Text className="text-xl font-bold text-white">+</Text>
-                                            </TouchableOpacity>
+                                        <TouchableOpacity
+                                            onPress={() => router.push({ pathname: "/restaurante/plato-detalle", params: { id: item.id.toString() } })}
+                                            className="w-10 h-10 rounded-full bg-primary items-center justify-center"
+                                        >
+                                            <Text className="text-xl font-bold text-white">+</Text>
+                                        </TouchableOpacity>
                                     </View>
                                 </View>
                             </TouchableOpacity>
@@ -337,11 +286,8 @@ export default function Index() {
                     />
                 </View>
 
-
                 {/* 🔹 Restaurantes Destacados */}
-                <Text className="mt-2 mb-2 text-xl font-extrabold mx-4">
-                    Restaurantes Destacados
-                </Text>
+                <Text className="mt-2 mb-2 text-xl font-extrabold mx-4">Restaurantes Destacados</Text>
                 <FlatList
                     data={restaurantesTop}
                     keyExtractor={(item) => item.id}
@@ -351,81 +297,36 @@ export default function Index() {
                         <TouchableOpacity
                             key={item.id}
                             activeOpacity={0.9}
-                            onPress={() =>
-                                router.push({
-                                    pathname: "/restaurante/restaurante",
-                                    params: { id: item.id.toString() },
-                                })
-                            }
+                            onPress={() => router.push({ pathname: "/restaurante/restaurante", params: { id: item.id.toString() } })}
                             className="rounded-2xl overflow-hidden mb-4 mx-4"
                         >
                             <ImageBackground
                                 source={images.placeholder}
                                 resizeMode="cover"
-                                style={{
-                                    width: "100%",
-                                    borderRadius: 16,
-                                    overflow: "hidden",
-                                }}
+                                style={{ width: "100%", borderRadius: 16, overflow: "hidden" }}
                                 imageStyle={{ borderRadius: 16 }}
                             >
-                                {/* 🔹 Overlay oscuro */}
-                                <View
-                                    style={{
-                                        position: "absolute",
-                                        top: 0,
-                                        left: 0,
-                                        right: 0,
-                                        bottom: 0,
-                                        backgroundColor: "rgba(0,0,0,0.45)", // 👈 opacidad ajustable
-                                    }}
-                                />
-
-                                {/* 🔹 Contenido encima del overlay */}
-                                <View
-                                    style={{
-                                        flexDirection: "row",
-                                        alignItems: "center",
-                                        justifyContent: "space-between",
-                                        paddingVertical: 16,
-                                        paddingHorizontal: 12,
-                                    }}
-                                >
-                                    {/* Imagen circular */}
-                                    <Image
-                                        source={item.imagen_url ? { uri: item.imagen_url } : images.avatar}
-                                        className="w-20 h-20 rounded-full border-2 border-white"
-                                        resizeMode="cover"
-                                    />
-
-                                    {/* Info central */}
+                                <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.45)" }} />
+                                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 16, paddingHorizontal: 12 }}>
+                                    <Image source={item.imagen_url ? { uri: item.imagen_url } : images.avatar} className="w-20 h-20 rounded-full border-2 border-white" resizeMode="cover" />
                                     <View style={{ flex: 1, marginLeft: 12 }}>
-                                        <Text className="text-lg font-extrabold text-white" numberOfLines={1}>
-                                            {item.nombre}
-                                        </Text>
+                                        <Text className="text-lg font-extrabold text-white" numberOfLines={1}>{item.nombre}</Text>
                                         <Text className="text-base text-white font-semibold" numberOfLines={1}>
-                                            {typeof item.categoria === "string"
-                                                ? item.categoria
-                                                : item.categoria?.nombre}{" "}
-                                            • $$$
+                                            {typeof item.categoria === "string" ? item.categoria : item.categoria?.nombre} • $$$
                                         </Text>
                                     </View>
-
-                                    {/* Puntuación derecha */}
                                     <View className="flex-row items-center">
-                                        <Text className="text-xl font-bold text-white mr-1">
-                                            {item.calificacion_promedio?.toFixed(1) ?? "0.0"}
-                                        </Text>
+                                        <Text className="text-xl font-bold text-white mr-1">{item.calificacion_promedio?.toFixed(1) ?? "0.0"}</Text>
                                         <FontAwesome name="star" size={16} color="#f97316" />
                                     </View>
                                 </View>
                             </ImageBackground>
                         </TouchableOpacity>
-
                     )}
                 />
             </ScrollView>
-            {/* 👇 siempre al final y fuera del flujo */}
+
+            {/* 🔹 PopupMessage */}
             <PopupMessage
                 visible={popup.visible}
                 message={popup.message}

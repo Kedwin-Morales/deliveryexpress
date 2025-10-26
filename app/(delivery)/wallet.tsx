@@ -13,6 +13,7 @@ export default function WalletComponent() {
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [creating, setCreating] = useState<boolean>(false);
+    const [enviosTerminados, setEnviosTerminados] = useState<number>(0); // 👈 nuevo estado
 
     const token = useAuthStore((state) => state.user?.token);
     const user = useAuthStore((state) => state.user);
@@ -44,7 +45,36 @@ export default function WalletComponent() {
         fetchWallet();
     }, [user]);
 
-    // 🔹 2️⃣ Crear wallet
+    // 🔹 2️⃣ Consultar órdenes terminadas del conductor
+    useEffect(() => {
+        const fetchEnviosTerminados = async () => {
+            try {
+                const response = await axios.get(
+                    `${API_URL}/api/ordenes/ordenes/mis-ordenes/`,
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+
+                console.log(response.data)
+
+                // Filtramos solo las órdenes con estado "terminado" o "completado"
+                const terminadas = response.data.filter(
+                    (orden: any) =>
+                        orden.estado === "terminado" ||
+                        orden.estado === "completado" ||
+                        orden.estado === "finalizado"
+                );
+
+                setEnviosTerminados(terminadas.length);
+                console.log("Órdenes terminadas:", terminadas.length);
+            } catch (err: any) {
+                console.error("Error al cargar envíos terminados:", err);
+            }
+        };
+
+        fetchEnviosTerminados();
+    }, [user]);
+
+    // 🔹 3️⃣ Crear wallet
     const handleCrearWallet = async () => {
         try {
             setCreating(true);
@@ -67,13 +97,22 @@ export default function WalletComponent() {
         }
     };
 
-    if (loading) return <ActivityIndicator className="flex-1" size="large" color="#003399" />;
+    if (loading)
+        return (
+            <SafeAreaView className="flex-1 justify-center items-center bg-white">
+                <ActivityIndicator size="large" color="#003399" />
+                <Text className="mt-3 text-gray-600">Cargando cartera...</Text>
+            </SafeAreaView>
+        );
 
     return (
         <SafeAreaView className="flex-1 p-4 bg-white">
-
+            {/* Header */}
             <View className="flex-row items-center px-4 py-3 bg-white justify-between">
-                <TouchableOpacity onPress={() => router.replace('/(delivery)')} className="flex-row items-center">
+                <TouchableOpacity
+                    onPress={() => router.replace("/(delivery)")}
+                    className="flex-row items-center"
+                >
                     <Ionicons name="arrow-back" size={22} color="#003399" />
                     <Text className="text-xl font-bold text-primary ml-2">Atrás</Text>
                 </TouchableOpacity>
@@ -83,6 +122,7 @@ export default function WalletComponent() {
                 </TouchableOpacity>
             </View>
 
+            {/* Contenido */}
             {!wallet ? (
                 <View className="items-center justify-center flex-1">
                     <Text className="text-lg mb-4">No tienes wallet aún</Text>
@@ -98,24 +138,38 @@ export default function WalletComponent() {
                 </View>
             ) : (
                 <ScrollView>
-                    <Text className="text-center font-bold mt-4 text-secondary text-2xl">Cartera</Text>
+                    <Text className="text-center font-bold mt-4 text-secondary text-2xl">
+                        Cartera
+                    </Text>
 
+                    {/* Saldo y Envíos */}
                     <View className="flex-row justify-between mt-6 mb-4">
                         <View className="bg-gray-100 px-3 py-4 rounded-md elevation-md w-48">
-                            <Text className="text-xl font-bold text-center">Saldo disponible</Text>
-                            <Text className="text-center font-semibold text-green-600 text-xl">{parseFloat(wallet.saldo).toFixed(2)} $</Text>
+                            <Text className="text-xl font-bold text-center">
+                                Saldo disponible
+                            </Text>
+                            <Text className="text-center font-semibold text-green-600 text-xl">
+                                {parseFloat(wallet.saldo).toFixed(2)} $
+                            </Text>
                         </View>
 
                         <View className="bg-gray-100 px-3 py-4 rounded-md elevation-md w-44">
-                            <Text className="text-xl font-bold text-center">Envios</Text>
-                            <Text className="text-center font-semibold text-primary text-xl">8</Text>
+                            <Text className="text-xl font-bold text-center">Envíos</Text>
+                            <Text className="text-center font-semibold text-primary text-xl">
+                                {enviosTerminados}
+                            </Text>
                         </View>
                     </View>
-                    
-                    <Text className="font-bold text-2xl text-center text-secondary mt-4">Historial de transacciones</Text>
+
+                    {/* Historial */}
+                    <Text className="font-bold text-2xl text-center text-secondary mt-4">
+                        Historial de transacciones
+                    </Text>
 
                     {wallet.movimientos?.length === 0 ? (
-                        <Text className="text-gray-500 text-center mt-4">No hay movimientos aún</Text>
+                        <Text className="text-gray-500 text-center mt-4">
+                            No hay movimientos aún
+                        </Text>
                     ) : (
                         wallet.movimientos?.map((mov) => (
                             <View
@@ -129,8 +183,11 @@ export default function WalletComponent() {
                                     </Text>
                                 </View>
                                 <Text
-                                    className={`font-bold ${parseFloat(mov.monto) >= 0 ? "text-green-600" : "text-red-600"
-                                        }`}
+                                    className={`font-bold ${
+                                        parseFloat(mov.monto) >= 0
+                                            ? "text-green-600"
+                                            : "text-red-600"
+                                    }`}
                                 >
                                     {parseFloat(mov.monto) >= 0
                                         ? `+${parseFloat(mov.monto).toFixed(2)}`

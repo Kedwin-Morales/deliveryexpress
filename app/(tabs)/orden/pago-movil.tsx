@@ -33,9 +33,8 @@ export default function PagoMovilModal() {
   const { montoTotal } = useLocalSearchParams();
 
   // Convierte el monto a número y calcula en bolívares
-const montoTotalNum = Number(montoTotal) || 0;
-const montoEnBs = montoTotalNum * 160;
-
+  const montoTotalNum = Number(montoTotal) || 0;
+  const montoEnBs = montoTotalNum * 160;
 
   // Country picker
   const [country, setCountry] = useState({
@@ -70,14 +69,12 @@ const montoEnBs = montoTotalNum * 160;
     }
 
     try {
-    setIsSubmitting(true)
+      setIsSubmitting(true)
       const restauranteId = carrito;
       const detalles = carrito.map((item) => ({
         plato: item.id,
         cantidad: item.cantidad,
       }));
-
-      
 
       const payload = {
         restaurante: restauranteId[0].restauranteId,
@@ -106,8 +103,6 @@ const montoEnBs = montoTotalNum * 160;
         headers: { Authorization: `Bearer ${token}` },
       }).finally(() => setIsSubmitting(false))
 
-      
-
       limpiarCarrito();
       setReferencia("");
       setTelefono("");
@@ -124,6 +119,7 @@ const montoEnBs = montoTotalNum * 160;
       const res = await axios.get(`${API_URL}/api/ordenes/estados-orden/`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      // 🔹 Estado requerido para habilitar el botón: solo "Pago por verificar"
       setEstado(res.data.find((e: Estado) => e.nombre.toLowerCase() === "pago por verificar"));
     } catch (err) {
       console.log("Error obteniendo estados:", err);
@@ -142,17 +138,16 @@ const montoEnBs = montoTotalNum * 160;
   };
 
   const fetchDireccionPrincipal = async () => {
-        try {
-            const res = await axios.get(`${API_URL}/api/user/direcciones/`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            const principal = res.data.find((d: Direccion) => d.es_predeterminada === true);
-            setDireccionPrincipal(principal || null);
-        } catch (err) {
-            console.log("Error obteniendo direcciones:", err);
-        }
-    };
-
+    try {
+      const res = await axios.get(`${API_URL}/api/user/direcciones/`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const principal = res.data.find((d: Direccion) => d.es_predeterminada === true);
+      setDireccionPrincipal(principal || null);
+    } catch (err) {
+      console.log("Error obteniendo direcciones:", err);
+    }
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -162,6 +157,9 @@ const montoEnBs = montoTotalNum * 160;
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [carrito])
   );
+
+  // 🔹 Lógica del botón: habilitado solo si el estado es "Pago por verificar"
+  const isDisabled = estado?.nombre.toLowerCase() !== "pago por verificar";
 
   return (
     <SafeAreaView className="flex-1 bg-white px-6">
@@ -184,11 +182,10 @@ const montoEnBs = montoTotalNum * 160;
           <Text className="font-bold text-xl text-secondary mb-1 text-center">
             Datos para realizar el pago:
           </Text>
-          {[
-            { label: "Teléfono", valor: "0412-1234567", icon: "call" },
+          {[{ label: "Teléfono", valor: "0412-1234567", icon: "call" },
             { label: "Cédula", valor: "V-12345678", icon: "person" },
             { label: "Banco", valor: "Banco de Venezuela", icon: "business" },
-            { label: "Monto a pagar", valor: `Bs. ${montoEnBs}`, icon: "cash" },
+            { label: "Monto a pagar", valor: `Bs. ${montoEnBs}`, icon: "cash" }
           ].map((item) => (
             <View
               key={item.label}
@@ -214,7 +211,7 @@ const montoEnBs = montoTotalNum * 160;
           ))}
         </View>
 
-        {/* Teléfono desde donde hizo el pago */}
+        {/* Teléfono */}
         <View className="mt-6">
           <Text className="font-semibold text-lg mb-2">Teléfono desde donde realizó el pago</Text>
           <View className="flex-row items-center gap-2">
@@ -264,10 +261,12 @@ const montoEnBs = montoTotalNum * 160;
           />
         </View>
 
+        {/* Botón Confirmar */}
         <CustomButton
-          title="Confirmar"
-          style='bg-secondary mt-4'
+          title={isDisabled ? "Confirmación no disponible" : "Confirmar"}
+          style={isDisabled ? 'bg-gray-400 mt-4' : 'bg-secondary mt-4'}
           isLoading={isSubmitting}
+          disabled={isDisabled}
           onPress={handleSubmit}
         />
 

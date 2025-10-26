@@ -31,7 +31,6 @@ export default function OrdenDetalle() {
   // 🔁 Actualizar cada 30 s hasta que el estado sea “Entregada”
   useEffect(() => {
     fetchOrden();
-
     let interval: ReturnType<typeof setInterval>;
 
     if (orden?.estado_nombre !== "Entregada") {
@@ -52,10 +51,8 @@ export default function OrdenDetalle() {
     (s) => s.toLowerCase() === orden?.estado_nombre?.toLowerCase()
   );
 
-  // 🚫 Validar si el botón debe estar deshabilitado
-  const isDisabled =
-    orden?.estado_nombre === "Pendiente" ||
-    orden?.estado_nombre === "Aceptada";
+  // 🚫 Botón habilitado solo si el estado es "En camino"
+  const isDisabled = orden?.estado_nombre !== "En camino";
 
   return (
     <SafeAreaView className="flex-1 bg-white">
@@ -117,9 +114,7 @@ export default function OrdenDetalle() {
                         {isActive ? (
                           <Ionicons name="checkmark" size={20} color="white" />
                         ) : (
-                          <Text className="text-white font-bold">
-                            {index + 1}
-                          </Text>
+                          <Text className="text-white font-bold">{index + 1}</Text>
                         )}
                       </View>
 
@@ -192,7 +187,6 @@ export default function OrdenDetalle() {
             <TouchableOpacity
               disabled={isDisabled}
               onPress={() =>
-                !isDisabled &&
                 router.push({
                   pathname: "/perfil/mapa-direccion",
                   params: { id: orden?.id?.toString() },

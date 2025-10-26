@@ -11,9 +11,9 @@ import CarritoFlotante from "@/components/FloatingCart";
 import { useCarrito } from "@/store/useCart";
 
 const RestaurantePlatos = () => {
-  const { id } = useLocalSearchParams();
+  const { id } = useLocalSearchParams<{ id: string }>();
   const token = useAuthStore((state) => state.user?.token);
-  const { carrito, agregarAlCarrito, quitarDelCarrito } = useCarrito();
+  const { carrito } = useCarrito();
 
   const [platos, setPlatos] = useState<Plato[]>([]);
   const [restaurante, setRestaurante] = useState<Restaurante>();
@@ -21,6 +21,7 @@ const RestaurantePlatos = () => {
 
   const router = useRouter();
 
+  // 🔹 Fetch de datos
   const fetchPlatos = async () => {
     try {
       const resPlatos = await axios.get(
@@ -35,7 +36,6 @@ const RestaurantePlatos = () => {
       );
       setRestaurante(res.data);
 
-      console.log(res.data)
     } catch (err) {
       console.log("Error obteniendo platos:", err);
     } finally {
@@ -46,15 +46,15 @@ const RestaurantePlatos = () => {
   useFocusEffect(
     useCallback(() => {
       fetchPlatos();
-      // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [id])
   );
 
   return (
     <SafeAreaView className="flex-1 bg-white">
       <ScrollView contentContainerStyle={{ paddingBottom: 110 }} showsVerticalScrollIndicator={false}>
-        {/* Imagen y header */}
-        <View className="flex-row items-center px-4 py-3 bg-white justify-between ">
+        {/* Header */}
+        <View className="flex-row items-center px-4 py-3 bg-white justify-between">
           <View className="flex-row items-center">
             <TouchableOpacity onPress={() => router.back()} className="mr-3 flex-row">
               <Ionicons name="arrow-back" size={22} color="#003399" />
@@ -67,20 +67,19 @@ const RestaurantePlatos = () => {
           </TouchableOpacity>
         </View>
 
+        {/* Imagen del restaurante */}
         <Image
           source={restaurante?.imagen_url ? { uri: restaurante.imagen_url } : images.avatar}
           className="h-80 mx-4 rounded-t-2xl"
           resizeMode="contain"
         />
 
-        {/* Info del restaurante */}
+        {/* Información del restaurante */}
         <View className="mt-2 p-4">
           <View className="flex-row justify-between items-center">
             <Text className="text-xl font-extrabold mb-2">{restaurante?.nombre}</Text>
             <View className="flex-row items-center gap-1">
-              <Text className="ml-1 text-xl font-bold">
-                {restaurante?.calificacion_promedio ?? "0.0"}
-              </Text>
+              <Text className="ml-1 text-xl font-bold">{restaurante?.calificacion_promedio ?? "0.0"}</Text>
               <FontAwesome name="star" size={24} color="#FF6600" />
             </View>
           </View>
@@ -100,69 +99,60 @@ const RestaurantePlatos = () => {
           <Text className="text-base mt-2">{restaurante?.descripcion}</Text>
         </View>
 
+        {/* Platos */}
         {loading ? (
           <Text className="text-center text-gray-500">Cargando...</Text>
         ) : platos.length === 0 ? (
           <Text className="text-center text-gray-500">No hay platos disponibles</Text>
         ) : (
           <View className="gap-4 px-4">
-            {platos.map((p) => {
-              return (
-                <View
-                  key={p.id}
-                  className="bg-gray-100 rounded-2xl p-4 elevation-md overflow-hidden flex-row"
-                >
-                  <Image
-                    source={p.imagen ? { uri: p.imagen } : images.avatar}
-                    className="w-2/5 rounded-2xl"
-                    resizeMode="cover"
-                  />
-                  <View className="p-4 w-2/3">
-                    <Text className="text-base font-extrabold text-gray-800 mb-1">{p.nombre}</Text>
-                    <Text className="text-sm text-gray-600 mb-2">{p.descripcion}</Text>
-                    <View className="flex-row justify-between items-center">
-                      {p.precio_descuento ? (
-                        <View className="flex-row items-center gap-2">
-                          <Text className="text-base font-bold text-primary">
-                            ${p.precio_descuento}
-                          </Text>
-                          <Text className="text-sm text-gray-400 line-through">
-                            ${p.precio}
-                          </Text>
-                        </View>
-                      ) : (
-                        <Text className="text-base font-bold text-primary">
-                          ${p.precio}
-                        </Text>
-                      )}
+            {platos.map((p) => (
+              <View
+                key={p.id}
+                className="bg-gray-100 rounded-2xl p-4 elevation-md overflow-hidden flex-row"
+              >
+                <Image
+                  source={p.imagen ? { uri: p.imagen } : images.avatar}
+                  className="w-2/5 rounded-2xl"
+                  resizeMode="cover"
+                />
+                <View className="p-4 w-2/3">
+                  <Text className="text-base font-extrabold text-gray-800 mb-1">{p.nombre}</Text>
+                  <Text className="text-sm text-gray-600 mb-2">{p.descripcion}</Text>
+                  <View className="flex-row justify-between items-center">
+                    {p.precio_descuento ? (
+                      <View className="flex-row items-center gap-2">
+                        <Text className="text-base font-bold text-primary">${p.precio_descuento}</Text>
+                        <Text className="text-sm text-gray-400 line-through">${p.precio}</Text>
+                      </View>
+                    ) : (
+                      <Text className="text-base font-bold text-primary">${p.precio}</Text>
+                    )}
 
-                      
-                        <TouchableOpacity
-                          onPress={() => router.push({
-                            pathname: "/restaurante/plato-detalle",
-                            params: { id: p.id.toString() },
-                          })
-                          }
-                          className="bg-primary px-3 py-1 rounded-full"
-                        >
-                          <Text className="text-white">Añadir</Text>
-                        </TouchableOpacity>
-                      
-                    </View>
+                    <TouchableOpacity
+                      onPress={() =>
+                        router.push({
+                          pathname: "/restaurante/plato-detalle",
+                          params: { id: p.id.toString() },
+                        })
+                      }
+                      className="bg-primary px-3 py-1 rounded-full"
+                    >
+                      <Text className="text-white">Añadir</Text>
+                    </TouchableOpacity>
                   </View>
                 </View>
-              );
-            })}
+              </View>
+            ))}
           </View>
         )}
       </ScrollView>
 
+      {/* Carrito flotante */}
       <CarritoFlotante
         totalItems={carrito.reduce((acc, i) => acc + i.cantidad, 0)}
         onPress={() => router.push("/cart")}
       />
-
-
     </SafeAreaView>
   );
 };

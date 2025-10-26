@@ -1,4 +1,4 @@
-import { View, Text, TextInput, TouchableOpacity, Image, ScrollView, Alert } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, Image, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Entypo, Ionicons } from "@expo/vector-icons";
 import { useAuthStore } from "@/store/auth.store";
@@ -19,11 +19,15 @@ export default function FormularioPerfil() {
   const [fotoRemota, setFotoRemota] = useState<string>(""); // Para mostrar la que viene de la API
   const [email, setEmail] = useState("");
 
+  // Loader
+  const [loadingPerfil, setLoadingPerfil] = useState(true);
+
   // 🔹 Cargar datos del usuario al entrar
   useFocusEffect(
     useCallback(() => {
       const fetchUsuario = async () => {
         try {
+          setLoadingPerfil(true);
           const res = await axios.get(`${API_URL}/api/user/usuario/`, {
             headers: { Authorization: `Bearer ${user?.token}` },
           });
@@ -35,6 +39,8 @@ export default function FormularioPerfil() {
           setFotoRemota(u.foto_perfil || "");
         } catch (error) {
           console.error("Error al cargar perfil:", error);
+        } finally {
+          setLoadingPerfil(false);
         }
       };
       fetchUsuario();
@@ -78,19 +84,18 @@ export default function FormularioPerfil() {
 
       const updatedUser = res.data;
 
-      // 🔹 refrescamos el estado sin perder el token
       login({
-        ...user!, // conservamos token y demás campos
+        ...user!,
         nombre: updatedUser.nombre,
         telefono: updatedUser.telefono,
         foto_perfil: updatedUser.foto_perfil,
       });
 
-      Alert.alert("Éxito", "Perfil actualizado correctamente");
+      alert("Perfil actualizado correctamente");
       router.back();
     } catch (error: any) {
       console.error("Error al actualizar perfil:", error.response?.data || error);
-      Alert.alert("Error", "No se pudo actualizar el perfil");
+      alert("No se pudo actualizar el perfil");
     }
   };
 
@@ -104,77 +109,86 @@ export default function FormularioPerfil() {
             <Text className="text-xl font-bold text-primary">Atrás</Text>
           </TouchableOpacity>
         </View>
-
         <TouchableOpacity onPress={() => router.push("/profile")} className="items-center mr-4">
           <Ionicons name="notifications" size={32} color="#FF6600" />
         </TouchableOpacity>
       </View>
 
       <ScrollView className="px-4 mt-2">
-        {/* Foto de perfil */}
-        <View className="items-center mb-6 px-4 justify-around">
-          {fotoPerfil ? (
-            <Image source={{ uri: fotoPerfil.uri }} className="w-24 h-24 rounded-full" />
-          ) : fotoRemota ? (
-            <Image source={{ uri: fotoRemota }} className="w-24 h-24 rounded-full" />
-          ) : (
-            <View className="w-24 h-24 rounded-full bg-primary items-center justify-center">
-              <Ionicons name="person" size={40} color="white" />
+        {loadingPerfil ? (
+          // Skeleton loader
+          <View className="items-center space-y-4">
+            <View className="w-24 h-24 rounded-full bg-gray-200 animate-pulse" />
+            <View className="w-3/4 h-12 bg-gray-200 rounded-xl animate-pulse" />
+            <View className="w-3/4 h-12 bg-gray-200 rounded-xl animate-pulse" />
+            <View className="w-3/4 h-12 bg-gray-200 rounded-xl animate-pulse" />
+          </View>
+        ) : (
+          <>
+            {/* Foto de perfil */}
+            <View className="items-center mb-6 px-4 justify-around">
+              {fotoPerfil ? (
+                <Image source={{ uri: fotoPerfil.uri }} className="w-24 h-24 rounded-full" />
+              ) : fotoRemota ? (
+                <Image source={{ uri: fotoRemota }} className="w-24 h-24 rounded-full" />
+              ) : (
+                <View className="w-24 h-24 rounded-full bg-primary items-center justify-center">
+                  <Ionicons name="person" size={40} color="white" />
+                </View>
+              )}
+
+              <TouchableOpacity
+                className="mt-2 bg-gray-200 px-4 py-2 rounded-lg flex-row items-center gap-2"
+                onPress={pickImage}
+              >
+                <Entypo name="camera" size={24} color="black" />
+                <Text className="font-extrabold">Cambiar foto</Text>
+              </TouchableOpacity>
             </View>
-          )}
 
-          <TouchableOpacity
-            className="mt-2 bg-gray-200 px-4 py-2 rounded-lg flex-row items-center gap-2"
-            onPress={pickImage}
-          >
-            <Entypo name="camera" size={24} color="black" />
-            <Text className="font-extrabold">Cambiar foto</Text>
-          </TouchableOpacity>
-        </View>
+            {/* Nombre */}
+            <Text className="font-bold mb-1">Nombre</Text>
+            <TextInput
+              className="bg-gray-100 rounded-xl px-4 py-4 mb-4"
+              value={nombre}
+              onChangeText={setNombre}
+              placeholder="Tu nombre"
+            />
 
-        {/* Nombre */}
-        <Text className="font-bold mb-1">Nombre</Text>
-        <TextInput
-          className="bg-gray-100 rounded-xl px-4 py-4 mb-4 "
-          value={nombre}
-          onChangeText={setNombre}
-          placeholder="Tu nombre"
-        />
+            {/* Email */}
+            <Text className="font-semibold mb-1">Correo electrónico</Text>
+            <TextInput
+              className="bg-gray-100 rounded-xl px-4 py-4 mb-4"
+              value={email}
+              placeholder="Correo electrónico"
+              editable={false}
+            />
 
-        {/* Email */}
-        <Text className="font-semibold mb-1">Correo electrónico</Text>
-        <TextInput
-          className="bg-gray-100 rounded-xl px-4 py-4 mb-4"
-          value={email}
-          placeholder="Correo electrónico"
-          editable={false}
-        />
+            {/* Teléfono */}
+            <Text className="font-semibold mb-1">Teléfono</Text>
+            <TextInput
+              className="bg-gray-100 rounded-xl px-4 py-4 mb-4"
+              value={telefono}
+              onChangeText={setTelefono}
+              placeholder="Tu número de teléfono"
+              keyboardType="phone-pad"
+            />
 
-        {/* Teléfono */}
-        <Text className="font-semibold mb-1">Teléfono</Text>
-        <TextInput
-          className="bg-gray-100 rounded-xl px-4 py-4 mb-4 "
-          value={telefono}
-          onChangeText={setTelefono}
-          placeholder="Tu número de teléfono"
-          keyboardType="phone-pad"
-        />
+            {/* Botones */}
+            <View className="gap-4 justify-center items-center">
+              <TouchableOpacity
+                className="bg-secondary rounded-lg py-3 px-4 flex-row items-center gap-2 justify-center w-1/2"
+                onPress={handleSubmit}
+              >
+                <Text className="text-white text-center font-extrabold">Guardar cambios</Text>
+              </TouchableOpacity>
 
-        {/* Botones */}
-        <View className="gap-4 justify-center items-center">
-          <TouchableOpacity
-            className="bg-secondary rounded-lg py-3 px-4 flex-row items-center gap-2 justify-center w-1/2"
-            onPress={handleSubmit}
-          >
-            <Text className="text-white text-center font-extrabold ">Guardar cambios</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => router.push("/profile")}
-          >
-            <Text className="text-primary text-center font-extrabold">Cancelar</Text>
-          </TouchableOpacity>
-        </View>
+              <TouchableOpacity onPress={() => router.push("/profile")}>
+                <Text className="text-primary text-center font-extrabold">Cancelar</Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

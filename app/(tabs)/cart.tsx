@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   View,
@@ -17,6 +18,9 @@ import { Direccion, Estado, MetodosPagos } from "@/type";
 import axios from "axios";
 import { useAuthStore } from "@/store/auth.store";
 import PopupMessage from "@/components/PopupMessage";
+import InlineLoader from "@/components/InlineLoader";
+
+
 
 const Cart = () => {
   const router = useRouter();
@@ -30,6 +34,7 @@ const Cart = () => {
   const [subtotal, setSubtotal] = useState(0);
   const [total, setTotal] = useState(0);
   const [impuesto, setImpuesto] = useState(0);
+  const [loadingEnvio, setLoadingEnvio] = useState(false);
 
   const [metodosPago, setMetodosPago] = useState<MetodosPagos[]>([]);
   const [metodo, setMetodo] = useState<MetodosPagos | null>(null);
@@ -92,6 +97,8 @@ const Cart = () => {
     try {
       if (!direccionPrincipal || carrito.length === 0) return;
 
+      setLoadingEnvio(true); // ✅ activamos loader
+
       const restauranteId = carrito[0].restauranteId;
       if (!restauranteId) return;
 
@@ -127,8 +134,11 @@ const Cart = () => {
       calcularTotales(costo);
     } catch (err) {
       showPopup("No se pudo calcular el costo de envío", "cancel");
+    } finally {
+      setLoadingEnvio(false); // ✅ desactivamos loader
     }
   };
+
 
   /** 🧮 Calcular totales (incluyendo extras) */
   const calcularTotales = (costo = costoEnvio) => {
@@ -156,6 +166,7 @@ const Cart = () => {
       fetchDireccionPrincipal();
       fecthEstatusOrden();
       calcularCostoEnvio();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
   );
 
@@ -163,6 +174,7 @@ const Cart = () => {
     if (direccionPrincipal && carrito.length > 0) {
       calcularCostoEnvio();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [direccionPrincipal, carrito]);
 
   /** ✅ Enviar orden al backend */
@@ -340,10 +352,15 @@ const Cart = () => {
               </View>
               <View className="flex-row justify-between mt-2">
                 <Text className="text-base">Envío</Text>
-                <Text className="text-base text-primary font-bold">
-                  {costoEnvio}$
-                </Text>
+                {loadingEnvio ? (
+                  <InlineLoader size="small" color="#FF6900" />
+                ) : (
+                  <Text className="text-base text-primary font-bold">
+                    {costoEnvio}$
+                  </Text>
+                )}
               </View>
+
               <View className="flex-row justify-between mt-2 pb-2">
                 <Text className="text-base">Impuestos</Text>
                 <Text className="text-base">{impuesto.toFixed(2)}$</Text>
@@ -357,9 +374,8 @@ const Cart = () => {
             {/* Método de pago */}
             <TouchableOpacity
               onPress={() => setModalVisible(true)}
-              className={`flex-row items-center justify-center py-4 rounded-xl mx-4 mt-8 ${
-                metodo ? "bg-[#FF6900]" : "bg-primary"
-              }`}
+              className={`flex-row items-center justify-center py-4 rounded-xl mx-4 mt-8 ${metodo ? "bg-[#FF6900]" : "bg-primary"
+                }`}
             >
               <Text className="text-xl text-center text-white font-bold">
                 {metodo ? metodo.nombre : "Seleccionar método de pago"}
@@ -415,9 +431,8 @@ const Cart = () => {
             {/* Footer */}
             <View className="mt-6 px-16 mb-4">
               <TouchableOpacity
-                className={`py-4 rounded-xl items-center ${
-                  direccionPrincipal && metodo ? "bg-secondary" : "bg-gray-200"
-                }`}
+                className={`py-4 rounded-xl items-center ${direccionPrincipal && metodo ? "bg-secondary" : "bg-gray-200"
+                  }`}
                 onPress={handledSubmit}
                 disabled={!direccionPrincipal}
               >

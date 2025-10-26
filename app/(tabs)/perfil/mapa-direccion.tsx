@@ -1,7 +1,7 @@
 import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
+import { Fontisto, Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import axios from "axios";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
@@ -14,9 +14,12 @@ export default function MapaDireccion() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const token = useAuthStore((state) => state.user?.token);
+
   const [orden, setOrden] = useState<Orden | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [ubicacionConductor, setUbicacionConductor] = useState<{ latitud: number; longitud: number } | null>(null);
+
+  const mapRef = useRef<MapView>(null);
   const GOOGLE_MAPS_APIKEY = "AIzaSyDGW53aLubZK0HAmlRi2x-FrgpuK6Ce2m8";
 
   // 📦 Obtener información de la orden
@@ -25,7 +28,12 @@ export default function MapaDireccion() {
       const res = await axios.get(`${API_URL}/api/ordenes/ordenes/${id}/`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setOrden(res.data);
+      const data = res.data;
+      setOrden({
+        ...data,
+        latitud: Number(data.latitud),
+        longitud: Number(data.longitud),
+      });
     } catch (err) {
       console.log("Error obteniendo orden:", err);
     }
@@ -40,8 +48,8 @@ export default function MapaDireccion() {
 
       if (res.data && res.data.latitud && res.data.longitud) {
         setUbicacionConductor({
-          latitud: parseFloat(res.data.latitud),
-          longitud: parseFloat(res.data.longitud),
+          latitud: Number(res.data.latitud),
+          longitud: Number(res.data.longitud),
         });
       }
     } catch (err) {
@@ -66,20 +74,11 @@ export default function MapaDireccion() {
     if (orden && ubicacionConductor) setLoading(false);
   }, [orden, ubicacionConductor]);
 
-  // 🗺️ Coordenadas para renderizar mapa
-  const latitudEntrega = orden?.latitud;
-  const longitudEntrega = orden?.longitud;
+  if (!orden) return null;
 
   const destino = {
-    latitude: latitudEntrega || 0,
-    longitude: longitudEntrega || 0,
-  };
-
-  const region = {
-    latitude: ubicacionConductor?.latitud || destino.latitude,
-    longitude: ubicacionConductor?.longitud || destino.longitude,
-    latitudeDelta: 0.05,
-    longitudeDelta: 0.05,
+    latitude: Number(orden.latitud),
+    longitude: Number(orden.longitud),
   };
 
   return (
@@ -88,7 +87,7 @@ export default function MapaDireccion() {
       <View className="flex-row items-center px-4 py-3 bg-white justify-between">
         <View className="flex-row items-center">
           <TouchableOpacity
-            onPress={() => router.replace('/(tabs)/profile')}
+            onPress={() => router.replace("/(tabs)/profile")}
             className="mr-3 flex-row items-center"
           >
             <Ionicons name="arrow-back" size={22} color="#003399" />
@@ -108,14 +107,12 @@ export default function MapaDireccion() {
         </View>
       ) : (
         <MapView
+          ref={mapRef}
           style={{ flex: 1, marginTop: 10 }}
           provider={PROVIDER_GOOGLE}
-          initialRegion={region}
-          region={region}
-          showsUserLocation={false}
           showsCompass={true}
         >
-          {/* 📍 Marcador del Conductor */}
+          {/* 📍 Conductor */}
           {ubicacionConductor && (
             <Marker
               coordinate={{
@@ -124,12 +121,13 @@ export default function MapaDireccion() {
               }}
               title="Repartidor"
               description="Ubicación actual del conductor"
-              pinColor="blue"
-            />
+            >
+              <Fontisto name="motorcycle" size={36} color="#003399" />
+            </Marker>
           )}
 
-          {/* 🎯 Marcador del destino */}
-          {latitudEntrega && longitudEntrega && (
+          {/* 🎯 Destino */}
+          {destino.latitude && destino.longitude && (
             <Marker
               coordinate={destino}
               title="Destino"
@@ -138,7 +136,7 @@ export default function MapaDireccion() {
             />
           )}
 
-          {/* 🗺️ Dirección entre ambos puntos */}
+          {/* 🗺️ Ruta */}
           {ubicacionConductor && destino.latitude && destino.longitude && (
             <MapViewDirections
               origin={{
@@ -149,8 +147,19 @@ export default function MapaDireccion() {
               apikey={GOOGLE_MAPS_APIKEY}
               strokeWidth={4}
               strokeColor="#003399"
-              lineDashPattern={[0]}
               onError={(err) => console.log("Error en Directions:", err)}
+              onReady={(result) => {
+                // 👇 centra el mapa con zoom en la ruta
+                mapRef.current?.fitToCoordinates(result.coordinates, {
+                  edgePadding: {
+                    top: 80,
+                    right: 40,
+                    bottom: 80,
+                    left: 40,
+                  },
+                  animated: true,
+                });
+              }}
             />
           )}
         </MapView>

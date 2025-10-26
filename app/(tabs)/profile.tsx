@@ -9,11 +9,13 @@ import { API_URL } from "@/constants";
 import { Orden } from "@/type";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import InlineLoader from "@/components/InlineLoader";
 
 
 const Profile = () => {
   const { user, logout } = useAuthStore();
   const [recentOrders, setRecentOrders] = useState<Orden[]>([]);
+  const [loadingOrden, setLoadingOrden] = useState(true);
 
   const menuItems = [
     { label: "Direcciones", icon: "map-marker-alt", action: () => router.push("/perfil/direccion") },
@@ -36,6 +38,8 @@ const Profile = () => {
       setRecentOrders(sorted.slice(0, 3)); // solo 3 últimas
     } catch (err) {
       console.log("Error obteniendo órdenes:", err);
+    } finally {
+      setLoadingOrden(false);
     }
   };
 
@@ -101,6 +105,8 @@ const Profile = () => {
           <Text className="text-lg font-extrabold mb-3">Últimas Órdenes</Text>
           {recentOrders.length > 0 ? (
             <>
+             {
+              loadingOrden ? <InlineLoader size="large" color="#FF6600" /> : 
               <View className="bg-gray-100 rounded-2xl elevation-lg">
                 {recentOrders.map((order) => (
                   <TouchableOpacity key={order.id} className="flex-row justify-between p-4" onPress={() => router.push({
@@ -128,6 +134,7 @@ const Profile = () => {
                   </TouchableOpacity>
                 ))}
               </View>
+             }
             </>
           ) : (
             <View className="bg-white rounded-2xl shadow-md p-6 items-center">
@@ -141,8 +148,7 @@ const Profile = () => {
             </View>
           )}
         </View>
-
-
+        
         {/* Menu Options */}
         <View className="px-4 mt-6 gap-4 flex">
           {menuItems.map((item, idx) => (

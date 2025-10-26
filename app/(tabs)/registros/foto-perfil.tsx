@@ -28,8 +28,10 @@ export default function FotoPerfil() {
     icon: keyof typeof MaterialIcons.glyphMap = "info"
   ) => {
     setPopup({ visible: true, message, icon });
+    setTimeout(() => setPopup((prev) => ({ ...prev, visible: false })), 3000);
   };
 
+  // Abrir cámara para selfie
   const tomarFoto = async () => {
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -37,12 +39,12 @@ export default function FotoPerfil() {
       quality: 0.7,
     });
 
-    if (result.canceled) return;
-
-    const uri = result.assets[0].uri;
-    setArchivo(uri);
+    if (!result.canceled) {
+      setArchivo(result.assets[0].uri);
+    }
   };
 
+  // Subir selfie al backend
   const submit = async () => {
     if (!archivo) return;
 
@@ -54,7 +56,7 @@ export default function FotoPerfil() {
     } as any);
 
     try {
-      setIsLoading(true); // Solo mostrar pantalla de carga
+      setIsLoading(true);
 
       const res = await axios.patch(
         `${API_URL}/api/user/usuario/${user?.$id}/`,
@@ -67,38 +69,30 @@ export default function FotoPerfil() {
         }
       );
 
-      console.log(res.data)
-
       setIsLoading(false);
 
       if (res.data.verificacion_identidad) {
-        showPopup("Documento validado exitosamente ", "check-circle");
-        setTimeout(() => {
-          router.push("/registros/confirmacion-registro");
-        }, 2000);
+        showPopup("✅ Selfie validada exitosamente", "check-circle");
+        setTimeout(() => router.push("/registros/confirmacion-registro"), 2000);
       } else {
-        showPopup("No se pudo validar la selfie ❌", "cancel");
-        setTimeout(() => {
-          router.replace("/registros/foto-perfil");
-        }, 2000);
+        showPopup("❌ No se pudo validar la selfie", "cancel");
+        setTimeout(() => router.replace("/registros/foto-perfil"), 2000);
       }
     } catch (error) {
       console.error("❌ Error al subir la foto:", error);
       setIsLoading(false);
       showPopup("Hubo un problema al enviar la foto", "cancel");
-      setTimeout(() => {
-        router.replace("/registros/foto-perfil");
-      }, 2000);
+      setTimeout(() => router.replace("/registros/foto-perfil"), 2000);
     }
   };
 
-  // 🔹 Render principal
   if (isLoading) {
-    return <ScreenLoading />; // Solo mostrar pantalla de carga
+    return <ScreenLoading />;
   }
 
   return (
     <SafeAreaView className="flex-1 bg-white">
+      {/* Header */}
       <View
         className="w-full relative"
         style={{ height: Dimensions.get("screen").height / 14 }}
@@ -117,6 +111,7 @@ export default function FotoPerfil() {
         </View>
       </View>
 
+      {/* Título */}
       <Text className="text-center font-bold text-3xl text-secondary mt-6">
         ¡Una última cosa!
       </Text>
@@ -124,6 +119,7 @@ export default function FotoPerfil() {
         Queremos verificar que seas tú... ¡así que tómate tu mejor selfie!
       </Text>
 
+      {/* Preview de selfie */}
       <View className="justify-center items-center px-4 mt-4">
         {archivo ? (
           <Image
@@ -140,6 +136,7 @@ export default function FotoPerfil() {
         )}
       </View>
 
+      {/* Botón tomar foto */}
       <TouchableOpacity
         className="mt-8 bg-primary w-3/5 rounded-xl self-center items-center p-4 gap-2"
         onPress={tomarFoto}
@@ -148,6 +145,7 @@ export default function FotoPerfil() {
         <Text className="text-white font-bold text-xl">Toma una selfie</Text>
       </TouchableOpacity>
 
+      {/* Botón enviar foto */}
       <TouchableOpacity
         className={`mt-8 rounded-xl self-center items-center p-4 ${
           archivo ? "bg-secondary" : "bg-gray-400"
@@ -158,6 +156,7 @@ export default function FotoPerfil() {
         <Text className="text-white font-bold text-xl">Enviar foto</Text>
       </TouchableOpacity>
 
+      {/* Popup */}
       <PopupMessage
         visible={popup.visible}
         message={popup.message}

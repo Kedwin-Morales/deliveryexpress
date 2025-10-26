@@ -12,11 +12,11 @@ import PopupMessage from "@/components/PopupMessage";
 export default function ConfirmacionEmail() {
   const router = useRouter();
   const { user, setUser } = useAuthStore();
-  const token = useAuthStore((state) => state.user?.token);
+  const token = user?.token;
 
   const [email, setEmail] = useState(user?.email || "");
   const [editandoEmail, setEditandoEmail] = useState(false);
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [otp, setOtp] = useState<string[]>(["", "", "", "", "", ""]);
   const inputs = useRef<(TextInput | null)[]>([]);
 
   const [cooldown, setCooldown] = useState(0);
@@ -31,12 +31,10 @@ export default function ConfirmacionEmail() {
     setTimeout(() => setPopup((prev) => ({ ...prev, visible: false })), 3000);
   };
 
-  // 🔹 Cooldown (contador)
+  // 🔹 Cooldown contador
   useEffect(() => {
-    let timer: ReturnType<typeof setInterval>;
-    if (cooldown > 0) {
-      timer = setInterval(() => setCooldown((prev) => prev - 1), 1000);
-    }
+    if (cooldown <= 0) return;
+    const timer = setInterval(() => setCooldown((prev) => prev - 1), 1000);
     return () => clearInterval(timer);
   }, [cooldown]);
 
@@ -45,7 +43,7 @@ export default function ConfirmacionEmail() {
       const newOtp = [...otp];
       newOtp[index] = text;
       setOtp(newOtp);
-      if (text && index < 5) inputs.current[index + 1]?.focus();
+      if (text && index < otp.length - 1) inputs.current[index + 1]?.focus();
     }
   };
 
@@ -55,17 +53,15 @@ export default function ConfirmacionEmail() {
     }
   };
 
-  // 🔹 Enviar código de verificación por correo
+  // 🔹 Enviar código OTP
   const handleEnviarCodigo = async () => {
     if (!email) return showPopup("Por favor ingresa tu correo electrónico", "warning");
     if (cooldown > 0) return;
 
     try {
-      const payload = { metodo: "email" };
-      await axios.post(`${API_URL}/api/user/usuario/enviar-codigo/`, payload, {
+      await axios.post(`${API_URL}/api/user/usuario/enviar-codigo/`, { metodo: "email" }, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
       showPopup("📧 Código enviado a tu correo electrónico", "check-circle");
       setCooldown(300); // 5 minutos
     } catch (err) {
@@ -74,17 +70,15 @@ export default function ConfirmacionEmail() {
     }
   };
 
-  // 🔹 Confirmar código
+  // 🔹 Confirmar código OTP
   const handleSubmit = async () => {
     const code = otp.join("");
     if (code.length < 6) return showPopup("Por favor ingresa los 6 dígitos del código", "warning");
 
     try {
-      const payload = { metodo: "email", codigo: code };
-      await axios.post(`${API_URL}/api/user/usuario/verificar-codigo/`, payload, {
+      await axios.post(`${API_URL}/api/user/usuario/verificar-codigo/`, { metodo: "email", codigo: code }, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
       showPopup("✅ Correo verificado correctamente", "check-circle");
       router.replace("/(tabs)/registros/confirmacion-registro");
     } catch (err) {
@@ -96,7 +90,6 @@ export default function ConfirmacionEmail() {
   // 🔹 Guardar nuevo email
   const handleGuardarEmail = async () => {
     if (!email) return showPopup("Ingresa un correo válido", "warning");
-
     try {
       const resp = await axios.patch(
         `${API_URL}/api/user/usuario/${user?.$id}/`,
@@ -106,11 +99,11 @@ export default function ConfirmacionEmail() {
 
       if (resp.status === 200) {
         showPopup("✅ Correo actualizado correctamente", "check-circle");
-        setUser({ email });
+        setUser({ ...user, email });
         setEditandoEmail(false);
       }
     } catch (err) {
-      console.error("Error al actualizar correo:", err);
+      console.error(err);
       showPopup("Error al actualizar correo", "error-outline");
     }
   };
@@ -130,10 +123,7 @@ export default function ConfirmacionEmail() {
             className="flex-row items-center"
             onPress={() => router.push("/registros/confirmacion-registro")}
           >
-            <Image
-              source={images.arrowBack}
-              style={{ tintColor: "#003399", width: 20, height: 20 }}
-            />
+            <Image source={images.arrowBack} style={{ tintColor: "#003399", width: 20, height: 20 }} />
             <Text className="text-xl text-primary ml-2 font-bold">Atrás</Text>
           </TouchableOpacity>
         </View>
@@ -143,7 +133,6 @@ export default function ConfirmacionEmail() {
       <Text className="text-center text-3xl font-extrabold text-secondary mt-4">
         Confirma tu Correo Electrónico
       </Text>
-
       <Text className="text-xl mx-8 font-semibold">
         Enviaremos un código a tu correo para confirmar la verificación.
       </Text>
@@ -157,7 +146,6 @@ export default function ConfirmacionEmail() {
           editable={editandoEmail}
           onChangeText={setEmail}
         />
-
         <TouchableOpacity
           onPress={editandoEmail ? handleGuardarEmail : () => setEditandoEmail(true)}
           className="self-end mt-2"
@@ -168,7 +156,7 @@ export default function ConfirmacionEmail() {
         </TouchableOpacity>
       </View>
 
-      {/* Botón para enviar código */}
+      {/* Botón enviar código */}
       <TouchableOpacity
         onPress={handleEnviarCodigo}
         disabled={cooldown > 0}
@@ -179,14 +167,12 @@ export default function ConfirmacionEmail() {
         </Text>
       </TouchableOpacity>
 
-      {/* Cajas de código */}
+      {/* Cajas de código OTP */}
       <View className="flex-row justify-center mt-8 gap-3">
         {otp.map((digit, index) => (
           <TextInput
             key={index}
-            ref={(ref) => {
-              inputs.current[index] = ref;
-            }}
+            ref={(ref) => { inputs.current[index] = ref; }}
             value={digit}
             onChangeText={(text) => handleChange(text, index)}
             onKeyPress={(e) => handleKeyPress(e, index)}
@@ -197,8 +183,11 @@ export default function ConfirmacionEmail() {
         ))}
       </View>
 
-      {/* Confirmar */}
-      <TouchableOpacity onPress={handleSubmit} className="bg-primary mx-10 py-3 rounded-xl mt-8">
+      {/* Confirmar OTP */}
+      <TouchableOpacity
+        onPress={handleSubmit}
+        className="bg-primary mx-10 py-3 rounded-xl mt-8"
+      >
         <Text className="text-white font-bold text-center text-xl">Confirmar Código</Text>
       </TouchableOpacity>
 

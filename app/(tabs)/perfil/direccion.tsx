@@ -11,15 +11,19 @@ import { Direccion } from "@/type";
 export default function DireccionLista() {
   const token = useAuthStore((state) => state.user?.token);
   const [direcciones, setDirecciones] = useState<Direccion[]>([]);
+  const [loadingDirecciones, setLoadingDirecciones] = useState(false);
 
   const fetchDirecciones = async () => {
     try {
+      setLoadingDirecciones(true); // ✅ activar loader
       const res = await axios.get(`${API_URL}/api/user/direcciones/`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setDirecciones(res.data);
     } catch (err) {
       console.log("Error obteniendo direcciones:", err);
+    } finally {
+      setLoadingDirecciones(false); // ✅ desactivar loader
     }
   };
 
@@ -75,11 +79,13 @@ export default function DireccionLista() {
       {/* Header */}
       <View className="flex-row items-center px-4 py-3 bg-white justify-between">
         <View className="flex-row items-center">
-          <TouchableOpacity onPress={() => router.push('/(tabs)/profile')} className="mr-3 flex-row">
+          <TouchableOpacity
+            onPress={() => router.push("/(tabs)/profile")}
+            className="mr-3 flex-row"
+          >
             <Ionicons name="arrow-back" size={22} color="#003399" />
             <Text className="text-xl font-bold text-primary">Atrás</Text>
           </TouchableOpacity>
-          
         </View>
 
         <TouchableOpacity onPress={() => router.push("/profile")} className="items-center mr-4">
@@ -87,46 +93,77 @@ export default function DireccionLista() {
         </TouchableOpacity>
       </View>
 
-      <Image source={images.papa_mapa} className="h-56 w-56 self-center" resizeMode="contain" />
+      <Image
+        source={images.papa_mapa}
+        className="h-56 w-56 self-center"
+        resizeMode="contain"
+      />
 
-      <Text className="text-center text-secondary font-extrabold text-3xl">Mis Direcciones</Text>
+      <Text className="text-center text-secondary font-extrabold text-3xl">
+        Mis Direcciones
+      </Text>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
         <View className="px-4 mt-4 gap-4">
-          {direcciones.map((dir) => (
-            <View
-              key={dir.id}
-              className={`p-4 flex-row justify-between items-center rounded-xl elevation-md ${dir.es_predeterminada ? 'bg-primary' : 'bg-gray-100'}`}
-            >
-
-              <TouchableOpacity
-                onPress={() => marcarPrincipal(dir.id)}
-                className="mt-2 flex-row items-center"
-              >
-                <Ionicons
-                  name={dir.es_predeterminada ? "radio-button-on" : "radio-button-off"}
-                  size={18}
-                  color={dir.es_predeterminada ? "white" : "gray"}
-                />
-              </TouchableOpacity>
-              <View className="flex-1 pr-3 ml-2">
-                <Text className={`font-bold text-lg ${dir.es_predeterminada ? 'text-white' : 'text-gray-800'}`}>{dir.nombre}</Text>
-                <Text className={`${dir.es_predeterminada ? 'text-white' : 'text-gray-800'}`}>{dir.direccion_texto}</Text>
-              </View>
-
-              {/* Botones de acción */}
-              <View className="flex-row gap-2">
-                {/* Eliminar */}
-                <TouchableOpacity
-                  onPress={() => eliminarDireccion(dir.id)}
-                  className="p-2"
+          {loadingDirecciones
+            ? // Skeleton de 3 cards
+              [1, 2, 3].map((i) => (
+                <View
+                  key={i}
+                  className="p-4 flex-row justify-between items-center rounded-xl bg-gray-200 animate-pulse"
                 >
-                  <Ionicons name="trash-outline" size={20} color={dir.es_predeterminada ? "white" : "gray"} />
-                </TouchableOpacity>
-              </View>
-            </View>
-          ))}
+                  <View className="w-5 h-5 rounded-full bg-gray-400 mr-2" />
+                  <View className="flex-1 ml-2 gap-2">
+                    <View className="h-4 bg-gray-400 rounded w-3/4" />
+                    <View className="h-3 bg-gray-400 rounded w-full" />
+                  </View>
+                  <View className="w-8 h-8 rounded-full bg-gray-400" />
+                </View>
+              ))
+            : // Lista normal cuando ya cargó
+              direcciones.map((dir) => (
+                <View
+                  key={dir.id}
+                  className={`p-4 flex-row justify-between items-center rounded-xl elevation-md ${
+                    dir.es_predeterminada ? "bg-primary" : "bg-gray-100"
+                  }`}
+                >
+                  <TouchableOpacity
+                    onPress={() => marcarPrincipal(dir.id)}
+                    className="mt-2 flex-row items-center"
+                  >
+                    <Ionicons
+                      name={dir.es_predeterminada ? "radio-button-on" : "radio-button-off"}
+                      size={18}
+                      color={dir.es_predeterminada ? "white" : "gray"}
+                    />
+                  </TouchableOpacity>
+                  <View className="flex-1 pr-3 ml-2">
+                    <Text
+                      className={`font-bold text-lg ${
+                        dir.es_predeterminada ? "text-white" : "text-gray-800"
+                      }`}
+                    >
+                      {dir.nombre}
+                    </Text>
+                    <Text className={dir.es_predeterminada ? "text-white" : "text-gray-800"}>
+                      {dir.direccion_texto}
+                    </Text>
+                  </View>
+
+                  <View className="flex-row gap-2">
+                    <TouchableOpacity onPress={() => eliminarDireccion(dir.id)} className="p-2">
+                      <Ionicons
+                        name="trash-outline"
+                        size={20}
+                        color={dir.es_predeterminada ? "white" : "gray"}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
         </View>
+
         <View className="px-6 items-center gap-4 mt-8">
           <TouchableOpacity
             onPress={() => router.push("/perfil/formulario-direccion")}
@@ -156,11 +193,8 @@ export default function DireccionLista() {
             <Text className="text-primary font-bold text-lg">Editar Dirección</Text>
             <MaterialCommunityIcons name="pencil" size={24} color="#003399" />
           </TouchableOpacity>
-
         </View>
       </ScrollView>
-
-
     </SafeAreaView>
   );
 }

@@ -11,7 +11,7 @@ import { Orden } from "@/type";
 export default function HistorialOrdenes() {
   const token = useAuthStore((state) => state.user?.token);
   const [ordenes, setOrdenes] = useState<Orden[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // comenzamos en true para mostrar loader inicial
 
   const fetchOrdenes = async () => {
     try {
@@ -20,8 +20,6 @@ export default function HistorialOrdenes() {
         headers: { Authorization: `Bearer ${token}` },
       });
       setOrdenes(res.data);
-
-      console.log(ordenes);
     } catch (err) {
       console.log("Error obteniendo órdenes:", err);
     } finally {
@@ -32,7 +30,7 @@ export default function HistorialOrdenes() {
   useFocusEffect(
     useCallback(() => {
       fetchOrdenes();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
   );
 
@@ -52,6 +50,7 @@ export default function HistorialOrdenes() {
         </TouchableOpacity>
       </View>
 
+      {/* Contenido */}
       {loading ? (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#2563eb" />
@@ -64,7 +63,9 @@ export default function HistorialOrdenes() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={{ paddingBottom: 110 }}>
-          <Text className="text-secondary text-center font-extrabold text-2xl">Historial de Órdenes</Text>
+          <Text className="text-secondary text-center font-extrabold text-2xl mt-4">
+            Historial de Órdenes
+          </Text>
           <View className="px-4 mt-4 gap-4">
             {ordenes.map((orden) => (
               <TouchableOpacity
@@ -79,7 +80,9 @@ export default function HistorialOrdenes() {
               >
                 <View>
                   <Text className="font-bold">{orden.restaurante_nombre}</Text>
-                  <Text className="text-gray-600 text-sm">Fecha: {new Date(orden.creado_en).toLocaleDateString()}</Text>
+                  <Text className="text-gray-600 text-sm">
+                    Fecha: {new Date(orden.creado_en).toLocaleDateString()}
+                  </Text>
                 </View>
 
                 <View className="justify-center items-center">

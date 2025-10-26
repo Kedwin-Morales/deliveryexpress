@@ -1,23 +1,23 @@
 import { View, Text, Dimensions, TouchableOpacity, Image } from 'react-native';
 import React, { useCallback, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { images, API_URL } from '@/constants';
-import { useFocusEffect, useRouter } from 'expo-router';
 import { FontAwesome6, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
+import { useFocusEffect, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
+import { images, API_URL } from '@/constants';
 import { useAuthStore } from '@/store/auth.store';
 import ScreenLoading from '@/components/ScreenLoading';
 import PopupMessage from '@/components/PopupMessage';
 
 export default function ConfirmacionCedula() {
   const token = useAuthStore((state) => state.user?.token);
-
-  const [documento, setDocumento] = useState(false); // ✅ indica si ya hay doc
-  const [archivo, setArchivo] = useState<string | null>(null); // ✅ guarda URI o file
   const { user } = useAuthStore();
-  const [loading, setLoading] = useState(true)
-  const router = useRouter()
+  const router = useRouter();
+
+  const [documento, setDocumento] = useState(false);
+  const [archivo, setArchivo] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const [popup, setPopup] = useState({
     visible: false,
@@ -59,43 +59,38 @@ export default function ConfirmacionCedula() {
 
   // Confirmar y enviar a backend
   const confirmar = async () => {
-   
+    if (!documento || !archivo) {
+      return showPopup('Por favor, sube un documento', 'warning');
+    }
 
-    if (archivo) {
-      const formData = new FormData();
-      formData.append('cedula_imagen', {
-        uri: archivo,
-        type: 'image/jpeg',
-        name: 'documento.jpg',
-      } as any);
+    const formData = new FormData();
+    formData.append('cedula_imagen', {
+      uri: archivo,
+      type: 'image/jpeg',
+      name: 'documento.jpg',
+    } as any);
 
-      try {
-        const res = await axios.patch(`${API_URL}/api/user/usuario/${user?.$id}/`, formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            Authorization: `Bearer ${token}`,
-          },
-        });
+    try {
+      const res = await axios.patch(`${API_URL}/api/user/usuario/${user?.$id}/`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-        if (res.data.cedula_imagen) {
-          showPopup('Documento validado', 'check-circle')
-          router.push('/registros/foto-perfil');
-        } else {
-          showPopup('No se pudo verificar el documento', 'cancel')
-        }
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      } catch (error) {
-        showPopup('Hubo un problema al enviar el documento', 'cancel')
+      if (res.data.cedula_imagen) {
+        showPopup('Documento validado', 'check-circle');
+        router.push('/registros/foto-perfil');
+      } else {
+        showPopup('No se pudo verificar el documento', 'cancel');
       }
+    } catch (error) {
+      console.error(error);
+      showPopup('Hubo un problema al enviar el documento', 'cancel');
     }
-
-    if(documento) {
-      router.push('/registros/foto-perfil');
-    }
-
-    return  showPopup('Por favor, sube un documento', 'warning');
   };
 
+  // Cargar estado inicial del usuario
   useFocusEffect(
     useCallback(() => {
       const fetchUsuario = async () => {
@@ -103,30 +98,31 @@ export default function ConfirmacionCedula() {
           const res = await axios.get(`${API_URL}/api/user/usuario/${user?.$id}/`, {
             headers: { Authorization: `Bearer ${user?.token}` },
           });
-
-          setDocumento(res.data.cedula_imagen);
+          setDocumento(Boolean(res.data.cedula_imagen));
           setLoading(false);
         } catch (error) {
           console.error("Error al cargar perfil:", error);
+          setLoading(false);
         }
       };
       fetchUsuario();
-      // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user?.token])
   );
 
-  if (loading) {
-    return <ScreenLoading />
-  }
+  if (loading) return <ScreenLoading />;
 
   return (
     <SafeAreaView className="flex-1 gap-5 bg-white">
       <View className="w-full relative" style={{ height: Dimensions.get('screen').height / 14 }}>
         <View className="absolute top-8 left-5 z-10 flex-row items-center">
-            <TouchableOpacity className="flex-row items-center" onPress={() => router.push('/registros/confirmacion-registro')}>
-              <Image source={images.arrowBack} style={{ tintColor: '#003399', width: 20, height: 20 }} />
-              <Text className="text-xl text-primary ml-2 font-bold">Atrás</Text>
-            </TouchableOpacity>
+          <TouchableOpacity
+            className="flex-row items-center"
+            onPress={() => router.push('/registros/confirmacion-registro')}
+          >
+            <Image source={images.arrowBack} style={{ tintColor: '#003399', width: 20, height: 20 }} />
+            <Text className="text-xl text-primary ml-2 font-bold">Atrás</Text>
+          </TouchableOpacity>
         </View>
       </View>
 

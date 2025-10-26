@@ -3,7 +3,7 @@ import React from 'react'
 import { CustomButtonProps } from '@/type'
 import cn from "clsx";
 
-const CustomButton = ({onPress, title="Click Me", style, textStyle, leftIcon, isLoading=false}:CustomButtonProps) => {
+const CustomButton = ({onPress, title="Click Me", style, textStyle, leftIcon, isLoading=false,  disabled = false,}:CustomButtonProps) => {
   return (
     <TouchableOpacity className={cn('w-2/4 py-3 rounded-lg self-center', style)} onPress={onPress} disabled={isLoading}>
       {leftIcon}

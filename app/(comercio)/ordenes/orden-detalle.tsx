@@ -10,96 +10,94 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from "expo-clipboard";
 
 export default function OrdenDetalle() {
-  const { id } = useLocalSearchParams(); // id de la orden desde la ruta
+  const { id } = useLocalSearchParams();
   const token = useAuthStore((state) => state.user?.token);
   const router = useRouter();
 
   const [orden, setOrden] = useState<Orden>();
   const [loading, setLoading] = useState(false);
-  const [estado, setEstado] = useState<Estado>()
-  const [modalVisible, setModalVisible] = useState(false); // 👈 Estado del modal
+  const [estados, setEstados] = useState<Estado[]>([]);
+  const [modalVisible, setModalVisible] = useState(false);
 
+  // 🔹 Obtener la orden
   const fetchOrden = async () => {
     try {
       const res = await axios.get(`${API_URL}/api/ordenes/ordenes/${id}/`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setOrden(res.data);
-
-
-      console.log('orden:', res.data)
     } catch (err) {
-      console.log('Error obteniendo la orden:', err);
+      console.log('❌ Error obteniendo la orden:', err);
     }
   };
 
-  const fecthEstatusOrden = async () => {
+  // 🔹 Obtener todos los estados
+  const fetchEstados = async () => {
     try {
       const res = await axios.get(`${API_URL}/api/ordenes/estados-orden/`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setEstado(res.data.find((e: Estado) => e.nombre.toLowerCase() === "aceptada"));
+      setEstados(res.data);
     } catch (err) {
-      console.log("Error obteniendo métodos de pago:", err);
+      console.log("❌ Error obteniendo estados de orden:", err);
     }
   };
 
   useEffect(() => {
     fetchOrden();
-    fecthEstatusOrden();
+    fetchEstados();
 
-    // ⏱️ Intervalo para refrescar estado de la orden cada 30s
-    const interval = setInterval(() => {
-      fetchOrden();
-    }, 30000);
-
+    const interval = setInterval(fetchOrden, 30000);
     return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  // Cambiar el estado de la orden
-  const cambiarEstado = async (nuevoEstado: string) => {
+  // 🔄 Cambiar estado (UUID)
+  const cambiarEstado = async (estadoId: string, nombre: string) => {
     if (!orden) return;
 
-    setLoading(true);
-    try {
-      await axios.patch(`${API_URL}/api/ordenes/ordenes/${id}/cambiar-estado/`,
-        { estado: nuevoEstado },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      Alert.alert('Éxito', `Orden actualizada a Esperando aceptacion`);
-      fetchOrden(); // refrescar datos
-    } catch (err: any) {
-      console.log('Error al actualizar la orden:', err?.response?.data);
-      Alert.alert('Error', 'No se pudo actualizar la orden');
-    } finally {
-      setLoading(false);
-    }
+    Alert.alert(
+      "Confirmar acción",
+      `¿Seguro que deseas cambiar el estado de la orden a "${nombre}"?`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Sí, confirmar",
+          onPress: async () => {
+            setLoading(true);
+            console.log("📦 Enviando cambio de estado:", { estado: estadoId });
+            try {
+              const res = await axios.patch(
+                `${API_URL}/api/ordenes/ordenes/${id}/cambiar-estado/`,
+                { estado: estadoId },
+                { headers: { Authorization: `Bearer ${token}` } }
+              );
+              Alert.alert("✅ Éxito", res.data.detail || `Orden actualizada a "${nombre}"`);
+              fetchOrden();
+            } catch (err: any) {
+              console.log("❌ Error al actualizar la orden:", err?.response?.data);
+              Alert.alert("Error", err?.response?.data?.detail || "No se pudo actualizar la orden");
+            } finally {
+              setLoading(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
-  // Color según estado
+  // 🎨 Colores para cada estado
   const colorEstado = (estado?: string) => {
     switch (estado?.toLowerCase()) {
-      case 'pago por verificar':
-        return '#FBC02D'; // azul
-
-      case 'pendiente':
-        return '#9E9E9E'; // amarillo
-
-      case 'aceptada':
-        return '#0033A0';
-
-      case 'asignada':
-        return '#FF9800';
-
-      case 'en camino':
-        return '#009688'; // naranja
-
-      case 'entregada':
-        return '#4CAF50'; // verde
-
-      case 'cancelada':
-        return '#F44336'; // rojo
+      case 'pago por verificar': return '#FBC02D';
+      case 'pendiente': return '#9E9E9E';
+      case 'aceptada': return '#0033A0';
+      case 'esperando aceptacion': return '#8836f4';
+      case 'asignada': return '#FF9800';
+      case 'preparado': return '#f43665';
+      case 'en camino': return '#009688';
+      case 'entregada': return '#4CAF50';
+      case 'cancelada': return '#F44336';
+      default: return '#333';
     }
   };
 
@@ -113,52 +111,52 @@ export default function OrdenDetalle() {
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      {/* Botón volver */}
-      <View className="flex-row items-center px-4 py-3 bg-white justify-between ">
+      {/* 🔙 Header */}
+      <View className="flex-row items-center px-4 py-3 bg-white justify-between">
         <View className="flex-row items-center">
           <TouchableOpacity onPress={() => router.replace('/(comercio)/ordenes')} className="mr-3 flex-row">
             <Ionicons name="arrow-back" size={22} color="#003399" />
             <Text className="text-xl font-bold text-primary">Atrás</Text>
           </TouchableOpacity>
         </View>
-
         <TouchableOpacity onPress={() => router.push("/profile")} className="items-center mr-4">
           <Ionicons name="notifications" size={32} color="#FF6600" />
         </TouchableOpacity>
       </View>
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom:100 }}>
 
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
         <Text className='text-center font-bold text-2xl text-secondary mb-6'>Detalle de Orden</Text>
 
+        {/* 🧾 Datos de la orden */}
         <View className='elevation-md rounded-xl py-4 px-6 bg-gray-50'>
           <View className='flex-row justify-between'>
             <Text className="text-xl font-bold text-secondary">Pedido #{orden.numero_orden}</Text>
             <Text className="text-xl font-bold text-primary">${orden.total ?? 0}</Text>
           </View>
-          <Text className="text-gray-600 font-medium">{new Date(orden.creado_en).toLocaleDateString("es-ES", {
-            day: "numeric",
-            month: "long",
-            year: "numeric",
-          })}</Text>
-
+          <Text className="text-gray-600 font-medium">
+            {new Date(orden.creado_en).toLocaleDateString("es-ES", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            })}
+          </Text>
 
           <Text className="font-semibold mt-4" style={{ color: colorEstado(orden.estado_nombre) }}>
             Estado: {orden.estado_nombre}
           </Text>
-
         </View>
 
+        {/* 🍽️ Platos */}
         <Text className='text-xl font-bold mt-6 text-secondary'>Platos de la Orden</Text>
         <View className='mt-2'>
-
-          {/* Aquí puedes listar productos si tu orden tiene items */}
           {orden.detalles?.map((item, index) => (
-            <View key={index} className="mb-2 p-4 justify-between items-center flex-row elevation-md rounded-2xl bg-gray-50 ">
-
+            <View key={index} className="mb-2 p-4 flex-row justify-between items-center elevation-md rounded-2xl bg-gray-50">
               <View className='flex-row gap-4'>
-                <Image source={{ uri: `${item.plato_imagen}` }}
+                <Image
+                  source={{ uri: item.plato_imagen }}
                   className="h-28 w-28 rounded-xl"
-                  resizeMode="cover" />
+                  resizeMode="cover"
+                />
                 <View className='justify-evenly'>
                   <Text className="text-primary font-medium">{item.plato_nombre}</Text>
                   <Text className="text-gray-500">Cantidad: {item.cantidad}</Text>
@@ -168,95 +166,92 @@ export default function OrdenDetalle() {
           ))}
         </View>
 
-        <Text className='text-xl font-bold mt-6 text-secondary'>Direccion de envío</Text>
-
+        {/* 📍 Dirección */}
+        <Text className='text-xl font-bold mt-6 text-secondary'>Dirección de envío</Text>
         <View className='elevation-md rounded-2xl p-4 px-6 bg-gray-50 mt-6'>
           <Text className='font-bold text-lg'>Nombre</Text>
           <Text className='font-medium'>{orden.cliente_nombre}</Text>
-          <Text className='text-lg font-bold mt-2'>Direccion</Text>
+          <Text className='text-lg font-bold mt-2'>Dirección</Text>
           <Text className='font-medium'>{orden.direccion_entrega}</Text>
 
           <View className="justify-center items-center mt-2">
-            <TouchableOpacity className="bg-primary py-2 rounded-full px-8" onPress={() => {
-              console.log("🟢 Abriendo modal...");
-              setModalVisible(true);
-            }}>
+            <TouchableOpacity
+              className="bg-primary py-2 rounded-full px-8"
+              onPress={() => setModalVisible(true)}
+            >
               <Text className="text-white font-bold">Ver Perfil</Text>
             </TouchableOpacity>
           </View>
         </View>
 
+        {/* ⚙️ Botones de acción */}
+        <View className='flex-col items-center mt-6 gap-3'>
 
-        {/* Botones de acción */}
-
-        <View className='flex-row justify-around items-center mt-6'>
+          {/* Cancelar */}
           {orden.estado_nombre?.toLowerCase() !== 'cancelada' && (
             <TouchableOpacity
-              onPress={() => cambiarEstado('cancelada')}
-              className="bg-primary rounded-lg py-3 px-2 w-2/5"
+              onPress={() => {
+                const estadoCancelada = estados.find((e) => e.nombre.toLowerCase() === 'cancelada');
+                if (estadoCancelada) cambiarEstado(estadoCancelada.id, estadoCancelada.nombre);
+                else Alert.alert("Error", "No se encontró el estado 'cancelada'.");
+              }}
+              className="bg-primary rounded-lg py-3 px-6 w-4/5"
               disabled={loading}
             >
               <Text className="text-white text-center font-semibold">Cancelar Orden</Text>
             </TouchableOpacity>
           )}
 
-          {orden.estado_nombre?.toLowerCase() === 'pendiente' && estado?.id && (
+          {/* Aceptar orden */}
+          {orden.estado_nombre?.toLowerCase() === 'pendiente' && (
             <TouchableOpacity
-              onPress={() => cambiarEstado(estado.id)}
-              className="bg-secondary rounded-lg py-3 px-2 w-2/5"
+              onPress={() => {
+                const estadoAceptada = estados.find((e) => e.nombre.toLowerCase() === 'aceptada');
+                if (estadoAceptada) cambiarEstado(estadoAceptada.id, estadoAceptada.nombre);
+                else Alert.alert("Error", "No se encontró el estado 'aceptada'.");
+              }}
+              className="bg-secondary rounded-lg py-3 px-6 w-4/5"
               disabled={loading}
             >
               <Text className="text-white text-center font-semibold">Aceptar Orden</Text>
             </TouchableOpacity>
           )}
-        </View>
 
+          {/* Marcar como preparado */}
+          {orden.estado_nombre?.toLowerCase() === 'asignada' && (
+            <TouchableOpacity
+              onPress={() => {
+                const estadoPreparado = estados.find((e) => e.nombre.toLowerCase() === 'preparado');
+                if (estadoPreparado) cambiarEstado(estadoPreparado.id, estadoPreparado.nombre);
+                else Alert.alert("Error", "No se encontró el estado 'preparado'.");
+              }}
+              className="bg-[#f43665] rounded-lg py-3 px-6 w-4/5"
+              disabled={loading}
+            >
+              <Text className="text-white text-center font-semibold">Marcar como Preparado</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </ScrollView>
 
-      {/* Modal del cliente */}
+      {/* 👤 Modal del cliente */}
       <Modal
         visible={modalVisible}
         animationType="fade"
         transparent={true}
         onRequestClose={() => setModalVisible(false)}
       >
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: "rgba(0,0,0,0.5)",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <View
-            style={{
-              backgroundColor: "white",
-              borderRadius: 20,
-              padding: 20,
-              width: "85%",
-              alignItems: "center",
-            }}
-          >
+        <View className="flex-1 bg-[rgba(0,0,0,0.5)] justify-center items-center">
+          <View className="bg-white rounded-2xl p-6 w-[85%] items-center">
             <Image
-              source={{
-                uri:
-                  orden.cliente_foto ||
-                  "https://cdn-icons-png.flaticon.com/512/149/149071.png",
-              }}
-              style={{
-                width: 100,
-                height: 100,
-                borderRadius: 50,
-                marginBottom: 10,
-              }}
+              source={{ uri: orden.cliente_foto || "https://cdn-icons-png.flaticon.com/512/149/149071.png" }}
+              style={{ width: 100, height: 100, borderRadius: 50, marginBottom: 10 }}
             />
             <Text className="text-lg font-bold mb-1">{orden.cliente_nombre}</Text>
             <Text className="text-gray-500">{orden.cliente_email || "Sin correo"}</Text>
 
             <View className="flex-row items-center mt-2">
-              <Text className="text-gray-500 mr-2">
-                {orden.cliente_telefono || "Sin teléfono"}
-              </Text>
+              <Text className="text-gray-500 mr-2">{orden.cliente_telefono || "Sin teléfono"}</Text>
               {orden.cliente_telefono && (
                 <TouchableOpacity
                   onPress={async () => {
